@@ -1,0 +1,26 @@
+{"name":"deadunit-core",
+ "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript and node.js.",
+ "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
+ "version":"1.0.0",
+ "dependencies":{
+     "colors":"",
+     "stack-trace":""
+ },
+ "devDependencies": {
+	"asyncFuture":"git+https://git@github.com/fresheneesz/asyncFuture.git#e26c29c76d840b6dfe2f00b64f16d4a8d67a5508",
+    "deadunit":"git+https://git@github.com/fresheneesz/deadunit.git#6610c335447514ba0e04b351febc31724dfe228b"
+ },
+ "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
+ "license": {
+   "name": "MIT",
+   "url": "http://www.opensource.org/licenses/mit-license.php"
+ },
+ "main": "deadunitCore.js",
+ "repository": {
+   "type": "git",
+   "url": "git://github.com/fresheneesz/deadunitCore"
+ },
+ "scripts": {
+   "test": "node tests/test.js"
+ }
+}
