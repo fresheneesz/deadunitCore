@@ -7,7 +7,7 @@ Has a dead-simple unit testing api that outputs unit-testing results as simple j
 Example
 =======
 
-```
+```javascript
 var Unit = require('dead-unit')
 
 var test = Unit.test('some test name', function() {
@@ -27,13 +27,13 @@ console.dir(test.results())
 Install
 =======
 
-```
+```javascript
 npm install deadunit-core
 ```
 
 Usage
 =====
-```
+```javascript
 var Unit = require('dead-unit')
 ```
 
