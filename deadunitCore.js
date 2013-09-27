@@ -6,19 +6,7 @@ var path = require('path')
 var domain = require('domain').create
 
 var stackTrace = require('stack-trace')
-
-
-/*  todo:
-	* have default timeouts for tests, so that if things hang somewhere the test still returns in a timely way (i think this obviates the need for the process.on exit stuff)
-    	* on process exit, instead of (or in addition to) writing to the console, throw all the exceptions that were caught by the test
-    * write documentation (include a note/recommendation on how to handle asynchronous tests - use asyncFuture)
-    * default html reporter
-    * Allow actual and expected to be set as undefined (without causing them to not show up)
-    * do something about the dependence on node.js domains
-    * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
-    * stream semantics for faster running tests (maybe?)
- */
-
+var proto = require('proto')
 
 // default
 var unhandledErrorHandler = function(e) {
@@ -53,6 +41,43 @@ exports.test = function(/*mainName=undefined, groups*/) {
 
 	return test
 }
+
+
+// the prototype of objects used to manage accessing and displaying results of a unit test
+var UnitTest = exports.test = proto(function() {
+    this.init = function(/*mainName=undefined, groups*/) {
+        // unnamed test
+        if(arguments.length === 1) {
+            var mainTest = arguments[0]
+
+        // named test
+        } else {
+            var mainName = arguments[0]
+            var mainTest = arguments[1]
+        }
+
+        var testStart = new Date()
+        var testResults = testGroup(new UnitTester(mainName), mainTest)
+        testResults.testDuration = testResults.totalDuration = (new Date()).getTime() - testStart.getTime()
+
+        this.testResutls = testResults
+    }
+
+    this.results = function() {
+        if(!this.testResutls.tester.resultsAccessed) { // if its the first time results were grabbed
+            eachTest(this.testResutls, function(subtest) {
+                if(subtest.tester.countInfo !== undefined) {
+                    var info = subtest.tester.countInfo
+                    assert(subtest.tester, subtest.tester.numberOfAsserts === info.expectedAsserts, subtest.tester.numberOfAsserts, info.expectedAsserts, 'count', info.lineInfo)
+                }
+            })
+        }
+
+        // resultsAccessed allows the unit test to do special alerting if asynchronous tests aren't completed before the test is completed
+		this.testResutls.tester.resultsAccessed = true
+        return this.testResutls
+    }
+})
 
 function testGroup(tester, test) {
     var d = domain()
@@ -182,23 +207,6 @@ function eachTest(test, callback) {
     })
 }
 
-// the prototype of objects used to manage accessing and displaying results of a unit test
-var UnitTest = function(test) {
-    this.results = function() {
-        if(!test.tester.resultsAccessed) { // if its the first time results were grabbed
-            eachTest(test, function(subtest) {
-                if(subtest.tester.countInfo !== undefined) {
-                    var info = subtest.tester.countInfo
-                    assert(subtest.tester, subtest.tester.numberOfAsserts === info.expectedAsserts, subtest.tester.numberOfAsserts, info.expectedAsserts, 'count', info.lineInfo)
-                }
-            })
-        }
-
-        // resultsAccessed allows the unit test to do special alerting if asynchronous tests aren't completed before the test is completed
-		test.tester.resultsAccessed = true
-        return test
-    }
-}
 
 
 

@@ -102,6 +102,30 @@ UnitTest
 }
 ```
 
+Note about tests with asynchronous parts
+========================================
+
+Javascript (and node.js especially) has a lot of asynchronous parts.
+Deadunit allows your tests to run asychronously/concurrently, but you have to manage that concurrency.
+In particular, you shouldn't access the results of a test unit before all parts of the test are complete (or your results will be incomplete).
+In order to make sure the tests are all done, you should manage concurrency in some way.
+
+I recommend that you use either:
+
+* [`fibers/future`s,]()
+* or my own [async-futures](https://github.com/fresheneesz/asyncFuture)
+
+To Do
+=====
+
+* have default timeouts for tests, so that if things hang somewhere the test still returns in a timely way (i think this obviates the need for the process.on exit stuff)
+    * on process exit, instead of (or in addition to) writing to the console, throw all the exceptions that were caught by the test
+* write documentation (include a note/recommendation on how to handle asynchronous tests - use asyncFuture)
+* default html reporter
+* Allow actual and expected to be set as undefined (without causing them to not show up)
+* do something about the dependence on node.js domains
+* allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
+* stream semantics for faster running tests (maybe?)
 
 How to Contribute!
 ============

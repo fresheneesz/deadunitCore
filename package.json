@@ -1,10 +1,11 @@
 {"name":"deadunit-core",
  "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript and node.js.",
  "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
- "version":"1.0.0",
+ "version":"1.0.1",
  "dependencies":{
      "colors":"",
-     "stack-trace":""
+     "stack-trace":"",
+     "proto":""
  },
  "devDependencies": {
 	"asyncFuture":"git+https://git@github.com/fresheneesz/asyncFuture.git#e26c29c76d840b6dfe2f00b64f16d4a8d67a5508",
