@@ -21,28 +21,6 @@ exports.error = function(handler) {
     unhandledErrorHandler = handler
 }
 
-
-exports.test = function(/*mainName=undefined, groups*/) {
-    // unnamed test
-    if(arguments.length === 1) {
-        var mainTest = arguments[0]
-
-    // named test
-    } else {
-        var mainName = arguments[0]
-        var mainTest = arguments[1]
-    }
-
-    var testStart = new Date()
-	var testResults = testGroup(new UnitTester(mainName), mainTest)
-    testResults.testDuration = testResults.totalDuration = (new Date()).getTime() - testStart.getTime()
-
-	var test = new UnitTest(testResults)
-
-	return test
-}
-
-
 // the prototype of objects used to manage accessing and displaying results of a unit test
 var UnitTest = exports.test = proto(function() {
     this.init = function(/*mainName=undefined, groups*/) {
