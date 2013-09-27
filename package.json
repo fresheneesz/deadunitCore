@@ -21,6 +21,6 @@
    "url": "git://github.com/fresheneesz/deadunitCore"
  },
  "scripts": {
-   "test": "node tests/test.js"
+   "test": "node test/testDeadunitCore"
  }
 }

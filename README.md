@@ -7,7 +7,7 @@ Has a dead-simple unit testing api that outputs unit-testing results as simple j
 Example
 =======
 
-```
+```javascript
 var Unit = require('dead-unit')
 
 var test = Unit.test('some test name', function() {
@@ -33,8 +33,8 @@ npm install deadunit-core
 
 Usage
 =====
-```
-var Unit = require('dead-unit')
+```javascript
+var Unit = require('deadunit-core')
 ```
 
 `Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object.
@@ -66,7 +66,62 @@ UnitTester
 UnitTest
 ----------
 
+`test.results()` - access the test results. Should only be accessed after the entire test has been completed (an asynchronous error will be thrown if more test results happen after the test results have been accessed).
 
+* returns a test group
+
+### Result Types ###
+
+#### group ####
+```javascript
+{  type: 'group',           // indicates a test group (either a `Unit.test` call or `this.test`)
+   name: <name>,            // the name of the test
+   results: <results>,      // An array of test results, which can be of an `UnitTest` Result Types
+   exceptions: <exceptions> // An array of uncaught exceptions thrown in the test
+}
+```
+
+#### assert ####
+```javascript
+{  type: 'assert',              // indicates an assert (either an `ok` or `count` call)
+   success: <success>,          // true or false, whether the assert passed or failed
+   sourceLines: <sourceLines>,  // the text of the actual line of code for the assert
+   file: <filename>,            // the filename of the file containing the test
+   line: <lineNumber>,          // line number of the assert
+   column: <column>,            // column number of the assert (not sure this is totally accurate)
+   expected: <expected>,        // (optional) the value expected in the assert (third parameter to `ok`)
+   actual: <actualvalue>        // (optional) the actual value gotten (second parameter to `ok`)
+}
+```
+
+#### log ####
+```javascript
+{  type: 'log',           // indicates a test log - this is so you can log something in-line with the test results
+   msg: <msg>             // the log message
+}
+```
+
+
+How to Contribute!
+============
+
+Anything helps:
+
+* Creating issues (aka tickets/bugs/etc). Please feel free to use issues to report bugs, request features, and discuss changes
+* Updating the documentation: ie this readme file. Be bold! Help create amazing documentation!
+* Submitting pull requests.
+
+How to submit pull requests:
+
+1. Please create an issue and get my input before spending too much time creating a feature. Work with me to ensure your feature or addition is optimal and fits with the purpose of the project.
+2. Fork the repository
+3. clone your forked repo onto your machine and run `npm install` at its root
+4. If you're gonna work on multiple separate things, its best to create a separate branch for each of them
+5. edit!
+6. If it's a code change, please add to the unit tests (at test/testDeadunitCore.js) to verify that your change
+7. When you're done, run the unit tests and ensure they all pass
+8. Commit and push your changes
+9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
 
 License
 =======
