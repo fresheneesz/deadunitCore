@@ -9,7 +9,7 @@ Example
 =======
 
 ```javascript
-var Unit = require('dead-unit')
+var Unit = require('deadunit-core')
 
 var test = Unit.test('some test name', function() {
     var obj = someFunctionToTest()
