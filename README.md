@@ -1,3 +1,5 @@
+**Status**: API finalized, needs testing
+
 `deadunitCore`
 ============
 
@@ -112,7 +114,7 @@ In order to make sure the tests are all done, you should manage concurrency in s
 
 I recommend that you use either:
 
-* [`fibers/future`s,]()
+* [`fibers/future`s](https://github.com/laverdet/node-fibers#futures),
 * or my own [async-futures](https://github.com/fresheneesz/asyncFuture)
 
 To Do
@@ -121,7 +123,6 @@ To Do
 * have default timeouts for tests, so that if things hang somewhere the test still returns in a timely way (i think this obviates the need for the process.on exit stuff)
     * on process exit, instead of (or in addition to) writing to the console, throw all the exceptions that were caught by the test
 * write documentation (include a note/recommendation on how to handle asynchronous tests - use asyncFuture)
-* default html reporter
 * Allow actual and expected to be set as undefined (without causing them to not show up)
 * do something about the dependence on node.js domains
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
@@ -132,7 +133,7 @@ How to Contribute!
 
 Anything helps:
 
-* Creating issues (aka tickets/bugs/etc). Please feel free to use issues to report bugs, request features, and discuss changes
+* Creating issues (aka tickets/bugs/etc). Please feel free to use issues to report bugs, request features, and discuss changes.
 * Updating the documentation: ie this readme file. Be bold! Help create amazing documentation!
 * Submitting pull requests.
 
