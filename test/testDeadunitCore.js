@@ -2,7 +2,7 @@
 
 var OldDeadunit = require('deadunit')
 var Unit = require('../deadunitCore')
-var Future = require('asyncFuture')
+var Future = require('async-future')
 
 var futuresToWaitOn = []
 
