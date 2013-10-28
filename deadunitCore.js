@@ -60,10 +60,21 @@ var UnitTest = exports.test = proto(function() {
 function testGroup(tester, test) {
     var d = domain()
     d.on('error', function(err) {
-        tester.exceptions.push(err)
-        if(tester.mainTester.resultsAccessed) {
-            unhandledErrorHandler(Error("Test results were accessed before asynchronous parts of tests were fully complete."
-                                         +" Got error: "+ err.message+" "+ err.stack))
+        try {
+            tester.exceptions.push(err)
+            if(tester.mainTester.resultsAccessed) {
+                if(err instanceof Error) {
+                    var errorToShow = err.stack
+                } else {
+                    var errorToShow = err
+                }
+                
+                unhandledErrorHandler(Error("Test results were accessed before asynchronous parts of tests were fully complete."
+                                             +" Got error: "+errorToShow ))
+            }
+        } catch(e) {
+           unhandledErrorHandler(Error("Deadunit threw up : ( - "+e.stack ))
+           console.error(e.stack)
         }
     })
 

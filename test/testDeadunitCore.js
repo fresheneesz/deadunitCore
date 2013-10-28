@@ -52,6 +52,15 @@ var testGroups = Unit.test("Full deadunit test (results of this will be verified
             this.ok(x === Infinity, x)
         })
     })
+
+    this.test("asynchronous errors", function() {        
+        setTimeout(function() {
+            throw Error("moo")
+        },0)
+        setTimeout(function() {
+            throw "thrown string"
+        },0)
+    })
 })
 
 Future.all(futuresToWaitOn).then(function() {
@@ -116,7 +125,7 @@ Future.all(futuresToWaitOn).then(function() {
             this.ok(test.name === "Full deadunit test (results of this will be verified)")
             this.ok(test.testDuration !== undefined && test.testDuration > 0, test.testDuration)
             this.ok(test.exceptions.length === 0)
-            this.ok(test.results.length === 3, test.results.length)
+            this.ok(test.results.length === 4, test.results.length)
 
             this.test("Verify 'Test Some Stuff'", function() {
                 var subtest1 = test.results[0]
@@ -208,7 +217,22 @@ Future.all(futuresToWaitOn).then(function() {
             })
 
             this.test("Verify 'long before/after'", function() {
-
+                var subtest1 = test.results[2]
+                this.ok(subtest1.name === "long before/after")
+                this.ok(subtest1.exceptions.length === 0)
+                this.ok(subtest1.results.length === 1)  
+                this.ok(subtest1.results[0].name === 'one')
+                    this.ok(subtest1.results[0].results[0].success === true, subtest1.results[0].file) 
+            })
+            
+            this.test("Verify 'asynchronous errors'", function() {
+                var subtest1 = test.results[3]
+                this.ok(subtest1.name === "asynchronous errors")
+                this.ok(subtest1.exceptions.length === 2)
+                this.ok(subtest1.results.length === 0) 
+                
+                this.ok(subtest1.exceptions[0].message === 'moo')
+                this.ok(subtest1.exceptions[1] === 'thrown string')
             })
         })
 
@@ -239,9 +263,8 @@ Future.all(futuresToWaitOn).then(function() {
         })
 
         this.test("Asynchronous counts", function(t) {
-            this.count(3)
+            this.count(2)
 
-            this.ok(true)
             var f1 = new Future
             setTimeout(function() {
                 t.ok(true)
@@ -257,27 +280,44 @@ Future.all(futuresToWaitOn).then(function() {
         })
 
         this.test('unhandled error handler', function(t) {
-            this.count(4)
+            this.count(6)
             var f = new Future
             moreFutures.push(f)
+            
+            var errorCount = 0
             Unit.error(function(e) {
-                t.ok(true)
-                t.ok(e.message.indexOf('Test results were accessed before asynchronous parts of tests were fully complete.') !== -1)
-                t.log(e)
-                f.return()
-            })
+                errorCount++
+                if(errorCount === 1) {
+                    t.ok(e.message.indexOf('Test results were accessed before asynchronous parts of tests were fully complete.') !== -1)
+                    t.ok(e.message.indexOf("t.ok(true)") !== -1)
+                    t.log(e)
+                } else if(errorCount === 2) {
+                    t.ok(e.message.indexOf('test') !== -1)
+                } else if(errorCount === 3) {
+                    t.ok(e.message.indexOf('thrown string') !== -1)
+                    f.return()
+                } else {
+                    t.ok(false)   
+                }
+            })      
+            
             var test = Unit.test(function(t) {
                 setTimeout(function() {
                     t.ok(true)
+                },10)
+                setTimeout(function() {
+                    throw Error('test')
+                },10)
+                setTimeout(function() {
+                    throw "thrown string"
                 },10)
             }).results()
 
             this.ok(test.name === undefined)
             this.ok(test.results.length === 0)
         })
-
     })
-
+    
     Future.all(moreFutures).then(function() {
         mainTest.writeConsole()
     })
