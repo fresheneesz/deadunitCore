@@ -15,7 +15,7 @@ var unhandledErrorHandler = function(e) {
     },0)
 }
 
-// setup unhandled error handler
+// setup default unhandled error handler
 // unhandled errors happen when done is called, and  then an exception is thrown from the future
 exports.error = function(handler) {
     unhandledErrorHandler = handler
@@ -24,36 +24,38 @@ exports.error = function(handler) {
 // the prototype of objects used to manage accessing and displaying results of a unit test
 var UnitTest = exports.test = proto(function() {
     this.init = function(/*mainName=undefined, groups*/) {
-        // unnamed test
-        if(arguments.length === 1) {
-            var mainTest = arguments[0]
-
-        // named test
-        } else {
-            var mainName = arguments[0]
-            var mainTest = arguments[1]
-        }
-
-        var testStart = new Date()
-        var testResults = testGroup(new UnitTester(mainName), mainTest)
-        testResults.testDuration = testResults.totalDuration = (new Date()).getTime() - testStart.getTime()
-
-        this.testResutls = testResults
+        var fakeTest = new UnitTester()
+            fakeTest.mainTester = fakeTest
+        UnitTester.prototype.test.apply(fakeTest, arguments)
+        
+        this.testResults = fakeTest.results[0]
     }
 
     this.results = function() {
-        if(!this.testResutls.tester.resultsAccessed) { // if its the first time results were grabbed
-            eachTest(this.testResutls, function(subtest) {
+        if(!this.testResults.tester.mainTester.resultsAccessed) { // if its the first time results were grabbed
+            eachTest(this.testResults, function(subtest, parenttest) {
                 if(subtest.tester.countInfo !== undefined) {
                     var info = subtest.tester.countInfo
-                    assert(subtest.tester, subtest.tester.numberOfAsserts === info.expectedAsserts, subtest.tester.numberOfAsserts, info.expectedAsserts, 'count', info.lineInfo)
+                    var actualCount = subtest.tester.numberOfSubtests + subtest.tester.numberOfAsserts
+                    assert(subtest.tester, actualCount === info.expectedCount, actualCount, info.expectedCount, 'count', info.lineInfo)
                 }
+
+                if(parenttest !== undefined) {
+                    //parenttest.tester.numberOfAsserts += subtest.tester.numberOfAsserts
+                    if(parenttest.tester.lastAction < subtest.tester.lastAction)
+                        parenttest.tester.lastAction = subtest.tester.lastAction
+                }
+
+                subtest.duration = subtest.tester.lastAction - subtest.tester.startTime
             })
+            
+            this.testResults.tester.mainTester.resultsAccessed = true
         }
 
         // resultsAccessed allows the unit test to do special alerting if asynchronous tests aren't completed before the test is completed
-		this.testResutls.tester.resultsAccessed = true
-        return this.testResutls
+		
+		
+        return this.testResults
     }
 })
 
@@ -69,12 +71,12 @@ function testGroup(tester, test) {
                     var errorToShow = err
                 }
                 
-                unhandledErrorHandler(Error("Test results were accessed before asynchronous parts of tests were fully complete."
+                handleUnhandledError(tester, Error("Test results were accessed before asynchronous parts of tests were fully complete."
                                              +" Got error: "+errorToShow ))
             }
         } catch(e) {
-           unhandledErrorHandler(Error("Deadunit threw up : ( - "+e.stack ))
-           console.error(e.stack)
+           handleUnhandledError(tester, Error("Deadunit threw up : ( - "+e.stack ))
+           console.log(e.stack)
         }
     })
 
@@ -105,11 +107,23 @@ var UnitTester = function(name, mainTester) {
     this.results = []
     this.exceptions = []
     this.numberOfAsserts = 0
+    this.numberOfSubtests = 0
 }
 
     UnitTester.prototype = {
-    	test: function(name, test) {
-            var beforeStart = new Date()
+    	test: function() {
+            if(arguments.length === 1) {
+                var test = arguments[0]
+    
+            // named test
+            } else {
+                var name = arguments[0]
+                var test = arguments[1]
+            }
+
+            this.numberOfSubtests += 1
+            
+            var startTime = new Date()
 
             if(this.beforeFn)
                 this.beforeFn.call(this, this)
@@ -117,31 +131,32 @@ var UnitTester = function(name, mainTester) {
             var testStart = new Date()
 			var tester = new UnitTester(name, this.mainTester)
             var result = testGroup(tester, test)
-            result.testDuration = (new Date()).getTime() - testStart.getTime()
-
-            this.numberOfAsserts += tester.numberOfAsserts
+            result.syncDuration = (new Date()).getTime() - testStart.getTime()
 
             if(this.afterFn)
                 this.afterFn.call(this, this)
 
-            result.totalDuration = (new Date()).getTime() - beforeStart.getTime()
+            var endTime = (new Date).getTime()
+            result.totalSyncDuration = endTime - startTime.getTime()
+            tester.startTime = startTime
+            tester.lastAction = endTime
 
             this.results.push(result)
+
+            this.lastAction = endTime
 		},
 
         ok: function(success, actualValue, expectedValue) {
             assert(this, success, actualValue, expectedValue, "ok")
-            this.numberOfAsserts += 1
         },
         equal: function(expectedValue, testValue) {
             assert(this, expectedValue === testValue, expectedValue, testValue, "equal")
-            this.numberOfAsserts += 1
         },
         count: function(number) {
-            if(this.expectedAsserts !== undefined)
+            if(this.expectedCount !== undefined)
                 throw Error("count called multiple times for this test")
             this.countInfo = {
-                expectedAsserts: number,
+                expectedCount: number,
                 lineInfo: getLineInformation('count', 0)
             }
         },
@@ -164,6 +179,13 @@ var UnitTester = function(name, mainTester) {
                 type: 'log',
                 msg: msg
             })
+
+            this.lastAction = (new Date).getTime()
+        },
+        error: function(handler) {
+            this.unhandledErrorHandler = handler
+
+            this.lastAction = (new Date).getTime()
         }
     }
 
@@ -171,6 +193,8 @@ function assert(that, success, actualValue, expectedValue, functionName/*="ok"*/
     if(!stackIncrease) stackIncrease = 1
     if(!functionName) functionName = "ok"
     if(!lineInfo) lineInfo = getLineInformation(functionName, stackIncrease)
+
+    that.numberOfAsserts += 1
 
     var result = lineInfo
     result.type = 'assert'
@@ -182,18 +206,29 @@ function assert(that, success, actualValue, expectedValue, functionName/*="ok"*/
     that.results.push(result)
 
     if(that.mainTester.resultsAccessed) {
-         unhandledErrorHandler(Error("Test results were accessed before asynchronous parts of tests were fully complete."+
+         handleUnhandledError(that, Error("Test results were accessed before asynchronous parts of tests were fully complete."+
                          " Got assert result: "+ JSON.stringify(result)))
     }
+
+    that.lastAction = (new Date).getTime()
 }
 
-function eachTest(test, callback) {
-    callback(test)
+function handleUnhandledError(tester, e) {
+    if(tester.unhandledErrorHandler !== undefined)
+        tester.unhandledErrorHandler(e)
+    else
+        unhandledErrorHandler(e)
+}
+
+// iterates through the tests and subtests leaves first (depth first)
+function eachTest(test, callback, parent) {
     test.results.forEach(function(result) {
         if(result.type === 'group') {
-            eachTest(result, callback)
+            eachTest(result, callback, test)
         }
     })
+
+    callback(test, parent)
 }
 
 

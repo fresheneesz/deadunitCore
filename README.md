@@ -45,7 +45,7 @@ var Unit = require('deadunit-core')
  * `<name>` - (optional) names the test
  * `<testFunction>` - a function that contains the asserts and sub-tests to be run. Both its one parameter and its bound `this` is given the same `UnitTester` object.
 
-`Unit.error(<errorHandler>)` - sets up a function that is called when an unhandled error happens. The main use case for this right now is if the test results were grabbed before the test was finished running.
+`Unit.error(<errorHandler>)` - sets up a default function that is called when an unhandled error happens. The main use case for this right now is if the test results were grabbed before the test was finished running.
 
 UnitTester
 ----------
@@ -56,7 +56,9 @@ UnitTester
 * `<actualValue>` - (optional) the "actual value" being tested. The test results will contain information about the actual value. Example: `this.ok(num === 5, num)`
 * `<expectedValue>` - (optional) the "expected value". The test results will contain information on the expected value. Example: `this.ok(obj.x === 5, obj.x, 5)
 
-`this.count(<number>)` - Declares that a test contains a certain `<number>` of asserts (the `ok` method call).
+`this.count(<number>)` - Declares that a test contains a certain `<number>` of test groups and asserts (the `ok` method call). Does not count asserts in subtests.
+
+`this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
 
 `this.log(<message>)` - Records a `<message>`that appears in the test results.
 
@@ -64,7 +66,7 @@ UnitTester
 
 `this.after(<function>)` - Runs the passed `<function>` once after each subtest in the test.
 
-`this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
+`this.error(<function>)` - Sets up a function that handles unhandled errors that happen specifically inside `this` test. This overrides a handler set up by `Unit.error`. Currently, this does  *not* catch undhandled errors thrown by child-tests.
 
 UnitTest
 ----------
@@ -77,30 +79,34 @@ UnitTest
 
 #### group ####
 ```javascript
-{  type: 'group',           // indicates a test group (either a `Unit.test` call or `this.test`)
-   name: <name>,            // the name of the test
-   results: <results>,      // An array of test results, which can be of an `UnitTest` Result Types
-   exceptions: <exceptions> // An array of uncaught exceptions thrown in the test
+{  type: 'group',        // indicates a test group (either a `Unit.test` call or `this.test`)
+   name: _,              // the name of the test
+   results: _,           // An array of test results, which can be of an `UnitTest` Result Types
+   exceptions: _,        // An array of uncaught exceptions thrown in the test,
+   duration: _,          // the duration of the test from its start til the last test action (assert, log, etc)
+                         //  including asynchronous parts and including subtests
+   syncDuration: _,      // the synchronous duration of the test (not including any asynchronous parts)
+   totalSyncDuration: _  // syncDuration plus the before and after (if applicable)
 }
 ```
 
 #### assert ####
 ```javascript
-{  type: 'assert',              // indicates an assert (either an `ok` or `count` call)
-   success: <success>,          // true or false, whether the assert passed or failed
-   sourceLines: <sourceLines>,  // the text of the actual line of code for the assert
-   file: <filename>,            // the filename of the file containing the test
-   line: <lineNumber>,          // line number of the assert
-   column: <column>,            // column number of the assert (not sure this is totally accurate)
-   expected: <expected>,        // (optional) the value expected in the assert (third parameter to `ok`)
-   actual: <actualvalue>        // (optional) the actual value gotten (second parameter to `ok`)
+{  type: 'assert',   // indicates an assert (either an `ok` or `count` call)
+   success: _,       // true or false, whether the assert passed or failed
+   sourceLines: _,   // the text of the actual line of code for the assert
+   file: _,          // the filename of the file containing the test
+   line: _,          // line number of the assert
+   column: _,        // column number of the assert (not sure this is totally accurate)
+   expected: _,      // (optional) the value expected in the assert (third parameter to `ok`)
+   actual: _         // (optional) the actual value gotten (second parameter to `ok`)
 }
 ```
 
 #### log ####
 ```javascript
-{  type: 'log',           // indicates a test log - this is so you can log something in-line with the test results
-   msg: <msg>             // the log message
+{  type: 'log',       // indicates a test log - this is so you can log something in-line with the test results
+   msg: _             // the log message
 }
 ```
 
@@ -117,15 +123,21 @@ I recommend that you use either:
 * [`fibers/future`s](https://github.com/laverdet/node-fibers#futures),
 * or my own [async-futures](https://github.com/fresheneesz/asyncFuture)
 
+Changelog
+========
+
+1.1.0: changed count to count asserts and subtests in the current test, and ignore asserts in subtests
+1.1.0: changed duration keys in order to make more sense and add asynchronous duration
+
 To Do
 =====
 
 * have default timeouts for tests, so that if things hang somewhere the test still returns in a timely way (i think this obviates the need for the process.on exit stuff)
     * on process exit, instead of (or in addition to) writing to the console, throw all the exceptions that were caught by the test
-* write documentation (include a note/recommendation on how to handle asynchronous tests - use asyncFuture)
-* Allow actual and expected to be set as undefined (without causing them to not show up)
-* do something about the dependence on node.js domains
+* Allow actual and expected to be set as undefined (without causing them to not show up) - this would require some tricky magic
+* do something about the dependence on node.js domains (so browsers can use deadunit)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
+* fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines, and also so it strips off the "this.ok()" part of the line (which is useless to print)
 * stream semantics for faster running tests (maybe?)
 
 How to Contribute!

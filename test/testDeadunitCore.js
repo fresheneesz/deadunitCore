@@ -67,13 +67,17 @@ Future.all(futuresToWaitOn).then(function() {
 
     var moreFutures = []
     var mainTest = OldDeadunit.test("Unit test the unit test-results (these should all succeed)", function() {
-
+        
+        Unit.error(function(e) {
+            this.ok(false, e.stack)
+        }.bind(this))
+        
         this.test('simple success', function() {
             var test = Unit.test(function() {
                 this.ok(true)
             }).results()
 
-            this.ok(test.name === undefined)
+            this.ok(test.name === undefined, test.name)
             this.ok(test.results.length === 1)
             this.ok(test.results[0].success === true)
         })
@@ -105,7 +109,6 @@ Future.all(futuresToWaitOn).then(function() {
             })
 
             simpleAsyncExceptionFuture.then(function() {
-                console.log("\nsimple async exception")
                 var test = simpleAsyncExceptionTest.results()
 
                 t.ok(test.name === undefined)
@@ -123,7 +126,7 @@ Future.all(futuresToWaitOn).then(function() {
 
             this.ok(test.type === "group")
             this.ok(test.name === "Full deadunit test (results of this will be verified)")
-            this.ok(test.testDuration !== undefined && test.testDuration > 0, test.testDuration)
+            this.ok(test.syncDuration !== undefined && test.syncDuration > 0, test.syncDuration)
             this.ok(test.exceptions.length === 0)
             this.ok(test.results.length === 4, test.results.length)
 
@@ -131,8 +134,8 @@ Future.all(futuresToWaitOn).then(function() {
                 var subtest1 = test.results[0]
                 this.ok(subtest1.type === "group")
                 this.ok(subtest1.name === "Test Some Stuff")
-                this.ok(subtest1.testDuration !== undefined && subtest1.testDuration > 0 && subtest1.testDuration < 100, subtest1.testDuration)
-                this.ok(subtest1.totalDuration !== undefined && subtest1.totalDuration >= subtest1.testDuration)  // totalDuration is the duration including before and after
+                this.ok(subtest1.syncDuration !== undefined && subtest1.syncDuration > 0 && subtest1.syncDuration < 100, subtest1.testDuration)
+                this.ok(subtest1.totalSyncDuration !== undefined && subtest1.totalSyncDuration >= subtest1.totalSyncDuration)  // totalDuration is the duration including before and after
                 this.ok(subtest1.exceptions.length === 0)
                 this.ok(subtest1.results.length === 5, subtest1.results.length)
 
@@ -152,7 +155,7 @@ Future.all(futuresToWaitOn).then(function() {
 
                     subtest2 = subtest1.results[1]
                     this.ok(subtest2.name === "shouldFail")
-                    this.ok(subtest2.testDuration !== undefined && subtest2.testDuration >= 0 && subtest2.testDuration < 10, subtest2.testDuration)
+                    this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
                     this.ok(subtest2.exceptions.length === 0)
                     this.ok(subtest2.results.length === 4, subtest2.results.length)
 
@@ -179,7 +182,7 @@ Future.all(futuresToWaitOn).then(function() {
 
                     subtest2 = subtest1.results[2]
                     this.ok(subtest2.name === "shouldThrowException")
-                    this.ok(subtest2.testDuration !== undefined && subtest2.testDuration >= 0 && subtest2.testDuration < 10, subtest2.testDuration)
+                    this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
                     this.ok(subtest2.exceptions.length === 1)
                     this.ok(subtest2.exceptions[0].message === "Ahhhhh!")
                     this.ok(subtest2.results.length === 2, subtest2.results.length)
@@ -197,7 +200,7 @@ Future.all(futuresToWaitOn).then(function() {
                     this.ok(subtest2.results.length === 0)
 
                     subtest2 = subtest1.results[4]     // count
-                    this.ok(subtest2.success === true)
+                    this.ok(subtest2.success === true, subtest2.success)
             })
 
             this.test("Verify 'SuccessfulTestGroup'", function() {
@@ -262,46 +265,132 @@ Future.all(futuresToWaitOn).then(function() {
             })
         })
 
-        this.test("Asynchronous counts", function(t) {
-            this.count(2)
+        this.test("Asynchronous times", function(t) {
+            var f1 = new Future, f2 = new Future, f3 = new Future
+            var test = Unit.test(function(test) {                
+                setTimeout(function() {
+                    test.ok(true)
+                    f1.return()
+                }, 100)
+                this.test(function(subtest) {
+                    setTimeout(function() {
+                        subtest.ok(true)
+                        f2.return()
+                    }, 200)
+                })
+            })
 
-            var f1 = new Future
-            setTimeout(function() {
-                t.ok(true)
-                f1.return()
-            }, 100)
-            var f2 = new Future
-            setTimeout(function() {
-                t.ok(true)
-                f2.return()
-            }, 200)
+            t.count(8)
+            moreFutures.push(f3)
+            
+            Future.all([f1,f2]).then(function() {
+                var results = test.results()
+                
+                t.ok(results.syncDuration < 50)
+                t.ok(results.duration >= 200)       
+                t.ok(results.results.length === 2, results.results.length)                    
+                    t.ok(results.results[0].results.length === 1)
+                        t.ok(results.results[0].results[0].success === true)
+                        t.ok(results.results[0].syncDuration < 50)
+                        t.ok(results.results[0].duration >= 200, require('util').inspect(results.results[0]))
+                    t.ok(results.results[1].success === true)
+                   
+            }).catch(function(e) {
+                t.ok(false, e)     
+            }).finally(function() {
+                f3.return()
+            }).done()
+        })
+        
+        function testCounts(t, test) {
+            var results = test.results()
+            
+            t.ok(results.results.length === 3, results.results.length)  
+            t.ok(results.results[2].actual === 2 && results.results[2].success === true, require('util').inspect(results.results[2]))
+                var subtest1 = results.results[0]
+                t.ok(subtest1.results[2].actual === 2 && subtest1.results[2].success === true, require('util').inspect(subtest1.results[2]))                    
+                t.ok(subtest1.results.length === 3, subtest1.results.length)
+                    var subtest2 = subtest1.results[0]
+                    t.ok(subtest2.results.length === 2, subtest2.results.length)
+                    t.ok(subtest2.results[1].actual === 1 
+                        && subtest2.results[1].success === true, require('util').inspect(subtest2.results[1]))  
+        }
+        
+        this.test("counts", function(t) {
+            var test = Unit.test(function() {
+                this.count(2)
+                this.test(function() {
+                    this.count(2)
+                    this.test(function() {
+                          this.count(1)
+                          this.ok(true)
+                    })
+                    this.ok(true)
+                })
+                this.ok(true)
+            })
+            
+            testCounts(t, test)                    
+        })
+        
+        this.test("asynchronous counts", function(t) {
+            var f = new Future, done = new Future
+            var test = Unit.test(function(t) {
+                t.count(2)
+                t.test(function(t) {
+                    t.count(2)
+                    t.test(function(t) {
+                        t.count(1)
+                        setTimeout(function() {
+                            t.ok(true)
+                            f.return()
+                        },20)
+                    })                    
+                    setTimeout(function() {
+                        t.ok(true)
+                    },10)
+                })
+                setTimeout(function() {
+                    t.ok(true)
+                },0)
+            })
 
-            moreFutures.push(f1,f2)
+            this.count(6)
+            moreFutures.push(done)
+            f.then(function() {
+                testCounts(t, test)
+                
+            }).finally(function() {
+                done.return()
+            }).catch(function(e) {
+                t.ok(false, e)
+            }).done()
         })
 
-        this.test('unhandled error handler', function(t) {
-            this.count(6)
+        this.test('unhandled error handler', function(realt) {
+            this.count(7)
             var f = new Future
             moreFutures.push(f)
             
             var errorCount = 0
-            Unit.error(function(e) {
-                errorCount++
-                if(errorCount === 1) {
-                    t.ok(e.message.indexOf('Test results were accessed before asynchronous parts of tests were fully complete.') !== -1)
-                    t.ok(e.message.indexOf("t.ok(true)") !== -1)
-                    t.log(e)
-                } else if(errorCount === 2) {
-                    t.ok(e.message.indexOf('test') !== -1)
-                } else if(errorCount === 3) {
-                    t.ok(e.message.indexOf('thrown string') !== -1)
-                    f.return()
-                } else {
-                    t.ok(false)   
-                }
-            })      
             
             var test = Unit.test(function(t) {
+                this.error(function(e) {
+                    errorCount++
+                    if(errorCount === 1) {
+                        realt.ok(e.message.indexOf('Test results were accessed before asynchronous parts of tests were fully complete.') !== -1)
+                        realt.ok(e.message.indexOf("t.ok(true)") !== -1)
+                        realt.log(e)
+                    } else if(errorCount === 2) {
+                        realt.ok(e.message.indexOf('test') !== -1)
+                    } else if(errorCount === 3) {
+                        realt.ok(e.message.indexOf('thrown string') !== -1)
+                        f.return()
+                    } else {
+                        realt.ok(false)
+                    }
+                })
+
                 setTimeout(function() {
                     t.ok(true)
                 },10)
@@ -315,15 +404,15 @@ Future.all(futuresToWaitOn).then(function() {
 
             this.ok(test.name === undefined)
             this.ok(test.results.length === 0)
+            this.ok(test.exceptions.length === 0)
         })
     })
     
-    Future.all(moreFutures).then(function() {
+    var allFutures = Future.all(moreFutures)
+    allFutures.then(function() {
         mainTest.writeConsole()
-    })
+    }).done()
 
 }).done()
-
-
 
 
