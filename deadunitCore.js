@@ -177,10 +177,10 @@ var UnitTester = function(name, mainTester) {
             this.afterFn = fn
         },
 
-        log: function(msg) {
+        log: function(/*arguments*/) {
             this.results.push({
                 type: 'log',
-                msg: msg
+                values: Array.prototype.slice.call(arguments, 0)
             })
 
             this.lastAction = (new Date).getTime()

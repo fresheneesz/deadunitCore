@@ -174,7 +174,9 @@ Future.all(futuresToWaitOn).then(function() {
 
                         subtest3 = subtest2.results[2]
                         this.ok(subtest3.type === "log")
-                        this.ok(subtest3.msg === "test log")
+                        console.dir(subtest3.values)
+                        this.ok(subtest3.values.length === 1)
+                        this.ok(subtest3.values[0] === "test log")
 
                         subtest3 = subtest2.results[3]      // count
                         this.ok(subtest3.type === "assert", subtest3.type)
@@ -443,6 +445,48 @@ Future.all(futuresToWaitOn).then(function() {
                 f2.return()
             }).done()
         })
+
+        this.test('logs', function() {
+
+            var array = [1,'a',{a:'b', b:[1,2]}]
+            var object = {some: 'object'}
+            var error = Error('test')
+
+            var test = Unit.test(function(t) {
+                this.log("string")
+                this.log(object)
+                this.log(array)
+                this.log(error)
+                this.log("string", object, array, error)
+
+                this.ok(false, "string")
+                this.ok(false, object)
+                this.ok(false, array)
+                this.ok(false, error)
+
+            }).results()
+
+            this.ok(test.results.length === 9)
+                this.ok(test.results[0].values.length === 1)
+                    this.ok(test.results[0].values[0] === "string")
+                this.ok(test.results[1].values.length === 1)
+                    this.ok(test.results[1].values[0] === object, test.results[1].values)
+                this.ok(test.results[2].values.length === 1)
+                    this.ok(test.results[2].values[0] === array, test.results[2].values)
+                this.ok(test.results[3].values.length === 1)
+                    this.ok(test.results[3].values[0] === error, test.results[3].values)
+                this.ok(test.results[4].values.length === 4)
+                    this.ok(test.results[4].values[0] === "string", test.results[4].values[0])
+                    this.ok(test.results[4].values[1] === object, test.results[4].values[1])
+                    this.ok(test.results[4].values[2] === array, test.results[4].values[2])
+                    this.ok(test.results[4].values[3] === error, test.results[4].values[3])
+
+                this.ok(test.results[5].actual === "string", test.results[5].actual)
+                this.ok(test.results[6].actual === object, test.results[6].actual)
+                this.ok(test.results[7].actual === array, test.results[7].actual)
+                this.ok(test.results[8].actual === error, test.results[8].actual)
+        })
+
     })
     
     var allFutures = Future.all(moreFutures)

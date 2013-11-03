@@ -60,7 +60,7 @@ UnitTester
 
 `this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
 
-`this.log(<message>)` - Records a `<message>`that appears in the test results.
+`this.log(<value>, <value2>, ...)` - Records a concatenated list of values that can be accessed in the test results. This will probably normally be used to record informational string messages.
 
 `this.before(<function>)` - Runs the passed `<function>` once before each subtest in the test.
 
@@ -106,7 +106,7 @@ UnitTest
 #### log ####
 ```javascript
 {  type: 'log',       // indicates a test log - this is so you can log something in-line with the test results
-   msg: _             // the log message
+   values: _          // the logged values
 }
 ```
 
@@ -122,15 +122,6 @@ I recommend that you use either:
 
 * [`fibers/future`s](https://github.com/laverdet/node-fibers#futures),
 * or my own [async-futures](https://github.com/fresheneesz/asyncFuture)
-
-Changelog
-========
-
-* 1.1.1
-  * enabled tests to still get all executed test results even if a [fiber](https://github.com/laverdet/node-fibers) dies midway through a test group
-* 1.1.0
-  * changed count to count asserts and subtests in the current test, and ignore asserts in subtests
-  * changed duration keys in order to make more sense and add asynchronous duration
 
 To Do
 =====
@@ -163,6 +154,17 @@ How to submit pull requests:
 7. When you're done, run the unit tests and ensure they all pass
 8. Commit and push your changes
 9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
+
+Changelog
+========
+
+* 1.1.2
+  * Changed `log` interface to be able to pass in multiple values
+* 1.1.1
+  * enabled tests to still get all executed test results even if a [fiber](https://github.com/laverdet/node-fibers) dies midway through a test group
+* 1.1.0
+  * changed count to count asserts and subtests in the current test, and ignore asserts in subtests
+  * changed duration keys in order to make more sense and add asynchronous duration
 
 License
 =======
