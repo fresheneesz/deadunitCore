@@ -126,8 +126,11 @@ I recommend that you use either:
 Changelog
 ========
 
-1.1.0: changed count to count asserts and subtests in the current test, and ignore asserts in subtests
-1.1.0: changed duration keys in order to make more sense and add asynchronous duration
+* 1.1.1
+  * enabled tests to still get all executed test results even if a [fiber](https://github.com/laverdet/node-fibers) dies midway through a test group
+* 1.1.0
+  * changed count to count asserts and subtests in the current test, and ignore asserts in subtests
+  * changed duration keys in order to make more sense and add asynchronous duration
 
 To Do
 =====

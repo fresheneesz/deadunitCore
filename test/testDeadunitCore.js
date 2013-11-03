@@ -406,6 +406,43 @@ Future.all(futuresToWaitOn).then(function() {
             this.ok(test.results.length === 0)
             this.ok(test.exceptions.length === 0)
         })
+
+        // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
+            // which causes the program to exit in what should be the middle of a continuation
+        // this test is about making sure that you can at least see the results that were collected within that incomplete test
+        this.test('fibers/futures - never-resolved future problem', function(t) {
+            this.count(3)
+
+            var Fiber = require('fibers')
+            var FibersFuture = require('fibers/future')
+
+            var f = new Future, f2 = new Future
+            var ff = new FibersFuture
+            moreFutures.push(f2)
+
+            var test = Unit.test(function() {
+                setTimeout(function() {
+                    Fiber(function() {
+                        f.return()
+                        this.test("argbleghghhh", function() {
+                            this.ok(true)
+                            ff.wait()
+                            this.ok(false)
+                        })
+                    }.bind(this)).run()
+                }.bind(this),0)
+            })
+
+            f.then(function() {
+                var results = test.results()
+
+                t.ok(results.results[0].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
+                t.ok(results.results[0].results.length === 1)
+                t.ok(results.results[0].results[0].success === true)
+            }).finally(function() {
+                f2.return()
+            }).done()
+        })
     })
     
     var allFutures = Future.all(moreFutures)

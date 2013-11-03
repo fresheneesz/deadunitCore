@@ -87,15 +87,6 @@ function testGroup(tester, test) {
             tester.exceptions.push(e)
         }
     })
-
-	return {
-		type: 'group',
-
-		name: tester.name,
-		results: tester.results,
-		exceptions: tester.exceptions,
-        tester: tester
-	}
 }
 
 // the prototype of objects used to write tests and contain the results of tests
@@ -114,7 +105,7 @@ var UnitTester = function(name, mainTester) {
     	test: function() {
             if(arguments.length === 1) {
                 var test = arguments[0]
-    
+
             // named test
             } else {
                 var name = arguments[0]
@@ -122,7 +113,7 @@ var UnitTester = function(name, mainTester) {
             }
 
             this.numberOfSubtests += 1
-            
+
             var startTime = new Date()
 
             if(this.beforeFn)
@@ -130,7 +121,20 @@ var UnitTester = function(name, mainTester) {
 
             var testStart = new Date()
 			var tester = new UnitTester(name, this.mainTester)
-            var result = testGroup(tester, test)
+
+            // i'm creating the result object and pushing it into the test results *before* running the test in case the test never completes (this can happen when using node fibers)
+            var result = {
+                type: 'group',
+
+                name: tester.name,
+                results: tester.results,
+		        exceptions: tester.exceptions,
+                tester: tester
+            }
+            this.results.push(result)
+
+            testGroup(tester, test)
+
             result.syncDuration = (new Date()).getTime() - testStart.getTime()
 
             if(this.afterFn)
@@ -141,7 +145,6 @@ var UnitTester = function(name, mainTester) {
             tester.startTime = startTime
             tester.lastAction = endTime
 
-            this.results.push(result)
 
             this.lastAction = endTime
 		},
