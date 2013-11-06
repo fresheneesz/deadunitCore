@@ -31,8 +31,13 @@ var testGroups = Unit.test("Full deadunit test (results of this will be verified
                 throw Error("Asynchronous Ahhhhh!")
             },0)
 		})
+		
+		this.log("subtest without a name")
+		this.test(function() {
+            this.ok(true)
+        })
 
-        this.count(4)
+        this.count(5)
 	})
 	this.test("SuccessfulTestGroup", function() {
 		this.test("yay", function() {
@@ -137,7 +142,7 @@ Future.all(futuresToWaitOn).then(function() {
                 this.ok(subtest1.syncDuration !== undefined && subtest1.syncDuration > 0 && subtest1.syncDuration < 100, subtest1.testDuration)
                 this.ok(subtest1.totalSyncDuration !== undefined && subtest1.totalSyncDuration >= subtest1.totalSyncDuration)  // totalDuration is the duration including before and after
                 this.ok(subtest1.exceptions.length === 0)
-                this.ok(subtest1.results.length === 5, subtest1.results.length)
+                this.ok(subtest1.results.length === 7, subtest1.results.length)
 
                     var subtest2 = subtest1.results[0]
                     this.ok(subtest2.type === "group")
@@ -169,12 +174,11 @@ Future.all(futuresToWaitOn).then(function() {
                         this.ok(subtest3.success === false)
                         this.ok(subtest3.sourceLines.join("\n").indexOf("true, false") !== -1)
                         this.ok(subtest3.file === "testDeadunitCore.js")
-                        this.ok(subtest3.line === 17, subtest3.line)
+                        this.ok(subtest3.line === 18, subtest3.line)
                         //this.ok(subtest3.column === 9, subtest3.column)
 
                         subtest3 = subtest2.results[2]
                         this.ok(subtest3.type === "log")
-                        console.dir(subtest3.values)
                         this.ok(subtest3.values.length === 1)
                         this.ok(subtest3.values[0] === "test log")
 
@@ -200,8 +204,17 @@ Future.all(futuresToWaitOn).then(function() {
                     this.ok(subtest2.exceptions.length === 1)
                     this.ok(subtest2.exceptions[0].message === "Asynchronous Ahhhhh!")
                     this.ok(subtest2.results.length === 0)
+                    
+                    this.ok(subtest1.results[4].type === 'log', subtest1.results[4].type) // log
+                    this.ok(subtest1.results[4].values[0] === 'subtest without a name')
+                    
+                    subtest2 = subtest1.results[5]
+                    this.ok(subtest2.name === undefined)
+                    this.ok(subtest2.exceptions.length === 0)
+                    this.ok(subtest2.results.length === 1)
+                    this.ok(subtest2.results[0].success === true)
 
-                    subtest2 = subtest1.results[4]     // count
+                    subtest2 = subtest1.results[6]     // count
                     this.ok(subtest2.success === true, subtest2.success)
             })
 
@@ -413,36 +426,56 @@ Future.all(futuresToWaitOn).then(function() {
             // which causes the program to exit in what should be the middle of a continuation
         // this test is about making sure that you can at least see the results that were collected within that incomplete test
         this.test('fibers/futures - never-resolved future problem', function(t) {
-            this.count(3)
+            this.count(10)
 
             var Fiber = require('fibers')
             var FibersFuture = require('fibers/future')
 
-            var f = new Future, f2 = new Future
+            var f = new Future, f2 = new Future, done = new Future
             var ff = new FibersFuture
-            moreFutures.push(f2)
+            moreFutures.push(done)
 
             var test = Unit.test(function() {
                 setTimeout(function() {
                     Fiber(function() {
                         f.return()
-                        this.test("argbleghghhh", function() {
+                        this.test("Dead fiber after results", function() {
                             this.ok(true)
                             ff.wait()
-                            this.ok(false)
+                            this.ok(false) // not supposed to get here
+                        })
+                    }.bind(this)).run()
+                }.bind(this),0)
+                                
+                setTimeout(function() {
+                    Fiber(function() {
+                        f2.return()
+                        this.test("Dead fiber before any results", function() { // this previously caused the duration to show up as NaN
+                            ff.wait()
+                            this.ok(false) // not supposed to get here
                         })
                     }.bind(this)).run()
                 }.bind(this),0)
             })
 
-            f.then(function() {
+            Future.all([f,f2]).then(function() {
                 var results = test.results()
 
-                t.ok(results.results[0].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
-                t.ok(results.results[0].results.length === 1)
-                t.ok(results.results[0].results[0].success === true)
+                t.ok(results.results.length === 2, results.results.length)
+                
+                    t.ok(results.results[0].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
+                    t.ok(results.results[0].results.length === 1)
+                    t.ok(results.results[0].results[0].success === true)                    
+                    t.ok(results.results[0].duration !== undefined, results.results[0].duration)
+                    t.ok(results.results[0].duration >= 0, results.results[0].duration)
+                    
+                    t.ok(results.results[1].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
+                    t.ok(results.results[1].results.length === 0)
+                    t.ok(results.results[1].duration !== undefined, results.results[1].duration)
+                    t.ok(results.results[1].duration >= 0, results.results[1].duration)
+                    
             }).finally(function() {
-                f2.return()
+                done.return()
             }).done()
         })
 

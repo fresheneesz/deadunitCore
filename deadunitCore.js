@@ -46,7 +46,13 @@ var UnitTest = exports.test = proto(function() {
                         parenttest.tester.lastAction = subtest.tester.lastAction
                 }
 
-                subtest.duration = subtest.tester.lastAction - subtest.tester.startTime
+                // these next couple conditions can happen if a node-fibers fiber died in the middle of a test
+                if(subtest.tester.lastAction === undefined)
+                    subtest.tester.lastAction = (new Date()).getTime()
+                if(subtest.syncDuration === undefined)
+                   subtest.syncDuration = subtest.totalSyncDuration = (new Date()).getTime() - subtest.tester.startTime.getTime()                
+                
+                subtest.duration = subtest.tester.lastAction - subtest.tester.startTime.getTime()
             })
             
             this.testResults.tester.mainTester.resultsAccessed = true
@@ -121,6 +127,7 @@ var UnitTester = function(name, mainTester) {
 
             var testStart = new Date()
 			var tester = new UnitTester(name, this.mainTester)
+            tester.startTime = startTime
 
             // i'm creating the result object and pushing it into the test results *before* running the test in case the test never completes (this can happen when using node fibers)
             var result = {
@@ -141,8 +148,7 @@ var UnitTester = function(name, mainTester) {
                 this.afterFn.call(this, this)
 
             var endTime = (new Date).getTime()
-            result.totalSyncDuration = endTime - startTime.getTime()
-            tester.startTime = startTime
+            result.totalSyncDuration = endTime - tester.startTime.getTime()
             tester.lastAction = endTime
 
 
