@@ -8,6 +8,8 @@ var domain = require('domain').create
 var stackTrace = require('stack-trace')
 var proto = require('proto')
 
+var processResults = require('./processResults')
+
 // default
 var unhandledErrorHandler = function(e) {
     setTimeout(function() { //  nextTick
@@ -31,12 +33,17 @@ var UnitTest = exports.test = proto(function() {
             fakeTest.manager = this.manager
             fakeTest.mainTester.timeoutCount = 0
             fakeTest.timeouts = []
-            timeout(fakeTest, 3000, true) // initial (default) timeout
 
+            timeout(fakeTest, 3000, true) // initial (default) timeout
+            fakeTest.onDone = function() { // will execute when this test is done
+                done(fakeTest)
+            }
 
         UnitTester.prototype.test.apply(fakeTest, arguments)
         this.mainTester = fakeTest
 
+        fakeTest.groupEnded = true
+        checkGroupDone(fakeTest)
     }
 
     this.events = function(handlers) {
@@ -44,122 +51,7 @@ var UnitTest = exports.test = proto(function() {
     }
 
     this.results = function() {
-        //if(!this.testResults.tester.mainTester.resultsAccessed) { // if its the first time results were grabbed
-
-            var results;
-            var groups = {}
-
-            var primaryGroup;
-
-            this.events({
-                group: function(e) {
-                    var g = {
-                       parent: e.parent,
-                       id: e.id,              // a unique id for the test group
-                       type: 'group',         // indicates a test group (either a `Unit.test` call or `this.test`)
-                       name: e.name,          // the name of the test
-                       results: [],           // An array of test results, which can be of an `UnitTest` Result Types
-                       exceptions: [],        // An array of uncaught exceptions thrown in the test,
-                       time: e.time,
-                       duration: 0            // the duration of the test from its start til the last test action (assert, log, etc)
-                       //                       including asynchronous parts and including subtests
-                       //syncDuration: _,      // the synchronous duration of the test (not including any asynchronous parts)
-                       //totalSyncDuration: _  // syncDuration plus the before and after (if applicable)
-                    }
-
-                    if(primaryGroup === undefined) primaryGroup = g
-
-                    groups[e.id] = g
-                    if(e.parent === undefined) {
-                        results = g
-                    } else {
-                        groups[e.parent].results.push(g)
-                    }
-                },
-                assert: function(e) {
-                    e.type = 'assert'
-                    groups[e.parent].results.push(e)
-                    setGroupDuration(e.parent, e.time)
-                },
-                count: function(e) {
-                    e.type = 'assert'
-                    setGroupDuration(e.parent, e.time)
-
-                    groups[e.parent].countInfo = e
-                },
-                exception: function(e) {
-                    groups[e.parent].exceptions.push(e.error)
-                    setGroupDuration(e.parent, e.time)
-                },
-                log: function(e) {
-                    e.type = 'log'
-                    groups[e.parent].results.push(e)
-                    setGroupDuration(e.parent, e.time)
-                },
-                before: function(e) {
-                    groups[e.parent].beforeStart = e.time
-                },
-                after: function(e) {
-                    groups[e.parent].afterStart = e.time
-                },
-                beforeEnd: function(e) {
-                    groups[e.parent].beforeDuration = e.time - groups[e.parent].beforeStart
-                },
-                afterEnd: function(e) {
-                    groups[e.parent].afterDuration = e.time - groups[e.parent].afterStart
-                },
-                groupEnd: function(e) {
-                    setGroupDuration(e.id, e.time)
-
-                    groups[e.id].totalSyncDuration = e.time - groups[e.id].time
-
-                    groups[e.id].syncDuration = groups[e.id].totalSyncDuration
-                    if(groups[e.id].beforeDuration !== undefined)
-                        groups[e.id].syncDuration -= groups[e.id].beforeDuration
-                    if(groups[e.id].afterDuration !== undefined)
-                        groups[e.id].syncDuration -= groups[e.id].afterDuration
-                },
-                end: function(e) {
-                    primaryGroup.timeout = e.type === 'timeout'
-
-                    // make the count assertions
-                    eachTest(primaryGroup, function(subtest, parenttest) {
-                        if(subtest.countInfo !== undefined) {
-                            var info = subtest.countInfo
-                            var actualCount = subtest.results.length
-                            //assert(subtest.tester, actualCount === info.expectedCount, actualCount, info.expectedCount, 'count', info.lineInfo)
-                            subtest.results.push({
-                                parent: subtest.id,
-                                type: 'assert',
-                                success: actualCount === info.expected,
-                                time: info.time,
-                                sourceLines: info.sourceLines,
-                                file: info.file,
-                                line: info.line,
-                                column: info.column,
-                                expected: info.expected,
-                                actual: actualCount
-                            })
-                        }
-                    })
-                }
-            })
-
-            function setGroupDuration(groupid, time) {
-                groups[groupid].duration = time - groups[groupid].time
-                if(groups[groupid].parent) {
-                    setGroupDuration(groups[groupid].parent, time)
-                }
-            }
-            
-            this.mainTester.resultsAccessed = true
-            return results
-        //}
-
-        // resultsAccessed allows the unit test to do special alerting if asynchronous tests aren't completed before the test is completed
-		
-		
-        //return this.testResults
+        return processResults(this)
     }
 })
 
@@ -257,10 +149,11 @@ var UnitTester = function(name, mainTester) {
     this.id = groupid()
 	this.mainTester = mainTester // the mainTester is used to easily figure out if the test results have been accessed (so early accesses can be detected)
 	this.name = name
-    //this.results = []
     this.exceptions = []
-    this.numberOfAsserts = 0
-    this.numberOfSubtests = 0
+    this.doneTests = 0
+    this.doneAsserts = 0
+    this.runningTests = 0 // the number of subtests created synchronously
+    this.doneCalled = false
 }
 
     UnitTester.prototype = {
@@ -274,10 +167,16 @@ var UnitTester = function(name, mainTester) {
                 var test = arguments[1]
             }
 
-            this.numberOfSubtests += 1
+            var that = this
+            this.runningTests++
 
             var tester = new UnitTester(name, this.mainTester)
             tester.manager = this.manager
+
+            tester.onDone = function() { // will execute when this test is done
+                that.doneTests += 1
+                checkGroupDone(that)
+            }
 
             this.manager.emit('group', {
                 id: tester.id,
@@ -300,18 +199,6 @@ var UnitTester = function(name, mainTester) {
                 })
             }
 
-
-            // i'm creating the result object and pushing it into the test results *before* running the test in case the test never completes (this can happen when using node fibers)
-            var result = {
-                type: 'group',
-
-                name: tester.name,
-                results: tester.results,
-		        exceptions: tester.exceptions,
-                tester: tester
-            }
-            //this.results.push(result)
-
             testGroup(tester, test)
 
             if(this.afterFn) {
@@ -332,25 +219,27 @@ var UnitTester = function(name, mainTester) {
                 id: tester.id,
                 time: now()
             })
+
+            tester.groupEnded = true
+            checkGroupDone(tester)
 		},
 
         ok: function(success, actualValue, expectedValue) {
+            this.doneAsserts += 1
             assert(this, success, actualValue, expectedValue, 'assert', "ok")
+            checkGroupDone(this)
         },
         equal: function(expectedValue, testValue) {
+            this.doneAsserts += 1
             assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal")
+            checkGroupDone(this)
         },
         count: function(number) {
-            if(this.countCalled !== undefined)
+            if(this.countExpected !== undefined)
                 throw Error("count called multiple times for this test")
-            this.countCalled = true
+            this.countExpected = number
 
             assert(this, undefined, undefined, number, 'count', "count")
-
-            /*this.countInfo = {
-                expectedCount: number,
-                lineInfo: getLineInformation('count', 0)
-            }*/
         },
 
         before: function(fn) {
@@ -367,11 +256,6 @@ var UnitTester = function(name, mainTester) {
         },
 
         log: function(/*arguments*/) {
-            /*this.results.push({
-                type: 'log',
-                values: Array.prototype.slice.call(arguments, 0)
-            })  */
-
             this.manager.emit('log', {
                 parent: this.id,
                 time: now(),
@@ -386,12 +270,19 @@ var UnitTester = function(name, mainTester) {
 
         error: function(handler) {
             this.unhandledErrorHandler = handler
-        },
-
-        done: function() {
-            done(this)
         }
     }
+
+function checkGroupDone(group) {
+    if(!group.doneCalled && group.groupEnded === true
+        && ((group.countExpected === undefined || group.countExpected <= group.doneAsserts+group.doneTests)
+            && group.runningTests === group.doneTests)
+    ) {
+        group.doneCalled = true // don't call
+        group.onDone()
+    }
+
+}
 
 function done(unitTester) {
     if(unitTester.mainTester.ended)
@@ -427,15 +318,6 @@ function timeout(that, t, theDefault) {
 function endTest(that, type) {
     that.mainTester.ended = true
 
-    // make the count assertions
-    /*eachTest(that.mainTester.results[0], function(subtest, parenttest) {
-        if(subtest.tester.countInfo !== undefined) {
-            var info = subtest.tester.countInfo
-            var actualCount = subtest.tester.numberOfSubtests + subtest.tester.numberOfAsserts
-            assert(subtest.tester, actualCount === info.expectedCount, actualCount, info.expectedCount, 'count', info.lineInfo)
-        }
-    })*/
-
     that.manager.emit('end', {
         type: type,
         time: now()
@@ -446,8 +328,6 @@ function assert(that, success, actualValue, expectedValue, type, functionName/*=
     if(!stackIncrease) stackIncrease = 1
     if(!functionName) functionName = "ok"
     if(!lineInfo) lineInfo = getLineInformation(functionName, stackIncrease)
-
-    that.numberOfAsserts += 1
 
     var result = lineInfo
     result.type = 'assert'
@@ -465,6 +345,7 @@ function assert(that, success, actualValue, expectedValue, type, functionName/*=
 
     if(that.mainTester.resultsAccessed) {
          handleUnhandledError(that, Error("Test results were accessed before asynchronous parts of tests were fully complete."+
+                        " If you have tests with asynchronous parts, make sure to use `this.count` to declare how many assertions you're waiting for."+
                          " Got assert result: "+ JSON.stringify(result)))
     }
 }
@@ -475,19 +356,6 @@ function handleUnhandledError(tester, e) {
     else
         unhandledErrorHandler(e)
 }
-
-// iterates through the tests and subtests leaves first (depth first)
-function eachTest(test, callback, parent) {
-    test.results.forEach(function(result) {
-        if(result.type === 'group') {
-            eachTest(result, callback, test)
-        }
-    })
-
-    callback(test, parent)
-}
-
-
 
 
 function getLineInformation(functionName, stackIncrease) {

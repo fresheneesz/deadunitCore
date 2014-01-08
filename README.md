@@ -84,11 +84,9 @@ UnitTester
 * `<actualValue>` - (optional) the "actual value" being tested. The test results will contain information about the actual value. Example: `this.ok(num === 5, num)`
 * `<expectedValue>` - (optional) the "expected value". The test results will contain information on the expected value. Example: `this.ok(obj.x === 5, obj.x, 5)
 
-`this.count(<number>)` - Declares that a test contains a certain `<number>` of test groups and asserts (the `ok` method call). Does not count asserts in subtests.
+`this.count(<number>)` - Declares that a test contains a certain `<number>` of test groups and asserts (the `ok` method call). Does not count asserts in subtests. This should only be called once per group, and shouldn't be called asynchronously. This is also used to determine when tests are complete. If `count` is not called in a test, that test completes when all of its subtests complete. If `count` is called, then the test completes when the count is reached.
 
 `this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
-
-`this.done()` - indicates that no more asynchronous parts of tests are expected for the entire test (ie not just the particular test group). This can be called before the synchronous parts of the test are done without any problems. Throws an exception if called more than once.
 
 `this.log(<value>, <value2>, ...)` - Records a concatenated list of values that can be accessed in the test results. This will probably normally be used to record informational string messages.
 
@@ -236,8 +234,6 @@ Note about tests with asynchronous parts
 
 Javascript (and node.js especially) has a lot of asynchronous parts.
 Deadunit allows your tests to run asychronously/concurrently, but you have to manage that concurrency.
-In particular, you shouldn't access the results of a test unit before all parts of the test are complete (or your results will be incomplete).
-In order to make sure the tests are all done, you should manage concurrency in some way.
 
 I recommend that you use either:
 
@@ -247,8 +243,6 @@ I recommend that you use either:
 To Do
 =====
 
-* use `count`s to determine when a test is done instead of using `done`
- * make sure to make a note about using count in the error message about accessing results early
 * Allow actual and expected to be set as undefined (without causing them to not show up) - this would require some tricky magic
 * do something about the dependence on node.js domains (so browsers can use deadunit)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
@@ -280,9 +274,9 @@ Changelog
 ========
 
 * 2.0.0 - *Breaking Change*
- * tests must call `this.done()` when they're done or they will time out
+ * tests use `this.count` to determine when tests are done
  * added an event driven api for maximal flexibility.
- * added timeout control
+ * tests can time out, added timeout control
  * count is no longer an assertEvent, but a countEvent
 * 1.1.3 - Fixed a bug with times when fibers die mid-test
 * 1.1.2 - Changed `log` interface to be able to pass in multiple values

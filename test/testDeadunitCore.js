@@ -11,11 +11,11 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
         this.ok(false, e.stack)
     }.bind(this))
 
+
     //*
     this.test('simple success', function() {
         var test = Unit.test(function() {
             this.ok(true)
-            this.done()
         }).results()
 
         this.ok(test.name === undefined, test.name)
@@ -26,7 +26,6 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
     this.test('simple failure', function() {
         var test = Unit.test(function() {
             this.ok(false)
-            this.done()
         }).results()
 
         this.ok(test.name === undefined)
@@ -35,6 +34,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
     })
     this.test('simple exception', function() {
         var test = Unit.test(function() {
+            this.count(1)
             this.timeout(100) // just to make the test end faster
             throw Error("sync")
         }).results()
@@ -42,15 +42,16 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
         this.ok(test.name === undefined)
         this.ok(test.exceptions.length === 1)
         this.ok(test.exceptions[0].message === 'sync')
-        this.ok(test.timeout === undefined) // the test hasn't end yet
+        this.ok(test.timeout === undefined, test.timeout) // the test hasn't end yet
     })
 
     this.test('simple async exception', function(t) {
         var simpleAsyncExceptionFuture = new Future, simpleAsyncExceptionFutureDone = new Future
         var simpleAsyncExceptionTest = Unit.test(function(t) {
+            this.count(1)
             setTimeout(function() {
                 simpleAsyncExceptionFuture.return()
-                t.done() // to prevent it from timing out
+                t.ok(true) // to prevent it from timing out
                 throw Error("Async")
             }, 0)
         })
@@ -83,7 +84,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
                     this.ok(5 === 3, 'actual', 'expected')
                     this.equal(true, false)
                     this.log("test log")
-                    this.count(3)
+                    this.count(2)
                 })
                 this.test("shouldThrowException", function() {
                     this.ok(true)
@@ -104,7 +105,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
                     this.ok(true)
                 })
 
-                this.count(5)
+                this.count(4) // 5 actually happen
             })
             this.test("SuccessfulTestGroup", function() {
                 this.test("yay", function() {
@@ -136,10 +137,9 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
 
             var f = new Future
             futuresToWaitOn.push(f)
-            setTimeout(function() {
+            setTimeout(function() {    // why is this here? Possibly to make sure the "asynchronous errors" finish first?
                 f.return()
-                this.done()
-            }.bind(this),50)
+            },50)
         })
 
         var futuresForThisTest = Future.all(futuresToWaitOn)
@@ -174,7 +174,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
                         this.ok(subtest3.success === true)
                         this.ok(subtest3.sourceLines.indexOf("5 === 5") !== -1)
                         this.ok(subtest3.file === "testDeadunitCore.js")
-                        this.ok(subtest3.line === 80, subtest3.line)
+                        this.ok(subtest3.line === 81, subtest3.line)
                         //this.ok(subtest3.column === 9, subtest3.column)
 
                     subtest2 = subtest1.results[1]
@@ -193,7 +193,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
                         this.ok(subtest3.success === false)
                         this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
                         this.ok(subtest3.file === "testDeadunitCore.js")
-                        this.ok(subtest3.line === 84, subtest3.line)
+                        this.ok(subtest3.line === 85, subtest3.line)
                         //this.ok(subtest3.column === 9, subtest3.column)
 
                         subtest3 = subtest2.results[2]
@@ -306,15 +306,16 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
     this.test("Asynchronous times", function(t) {
         var f1 = new Future, f2 = new Future, f3 = new Future
         var test = Unit.test(function(test) {
+            this.count(1)
             setTimeout(function() {
                 test.ok(true)
                 f1.return()
             }, 100)
             this.test(function(subtest) {
+                this.count(1)
                 setTimeout(function() {
                     subtest.ok(true)
                     f2.return()
-                    test.done() // to prevent it from timing out
                 }, 200)
             })
         })
@@ -328,8 +329,8 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             t.ok(results.timeout === false, results.timeout)
             t.ok(results.syncDuration < 50, results.syncDuration)
             t.ok(results.duration >= 200, results.duration)
-            t.ok(results.results.length === 2, results.results.length)
-                t.ok(results.results[0].results.length === 1)
+            t.ok(results.results.length === 3, results.results.length)
+                t.ok(results.results[0].results.length === 2)
                     t.ok(results.results[0].results[0].success === true)
                     t.ok(results.results[0].syncDuration < 50, results.results[0].syncDuration)
                     t.ok(results.results[0].duration >= 200, require('util').inspect(results.results[0]))
@@ -341,6 +342,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             f3.return()
         }).done()
     })
+
     function testCounts(t, test) {
         var results = test.results()
 
@@ -368,7 +370,6 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
                 this.ok(true)
             })
             this.ok(true)
-            this.done()
         })
 
         test.events({end: function() {
@@ -378,24 +379,27 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
 
     this.test("asynchronous counts", function(tester) {
         var f = new Future, done = new Future
+        var one = new Future, two = new Future // setTimeout apparently isn't deterministic in node.js (which sucks), so using futures instead to guarantee order
+
         var test = Unit.test(function(t) {
             t.count(2)
             t.test(function(t) {
                 t.count(2)
                 t.test(function(t) {
                     t.count(1)
-                    setTimeout(function() {
+                    two.then(function() {
                         t.ok(true)
                         f.return()
-                        t.done()
-                    },200)
+                    })
                 })
-                setTimeout(function() {
+                one.then(function() {
                     t.ok(true)
-                },100)
+                    two.return()
+                })
             })
             setTimeout(function() {
                 t.ok(true)
+                one.return()
             },0)
         })
 
@@ -419,17 +423,17 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
         var errorCount = 0
 
         var test = Unit.test(function(t) {
+            this.count(1)
+
             this.error(function(e) {
                 errorCount++
                 if(errorCount === 1) {
                     realt.ok(e.message.indexOf('Test results were accessed before asynchronous parts of tests were fully complete.') !== -1)
                     realt.ok(e.message.indexOf("t.ok(true)") !== -1)
-                    //realt.log(e)
                 } else if(errorCount === 2) {
                     realt.ok(e.message.indexOf('test') !== -1)
                 } else if(errorCount === 3) {
                     realt.ok(e.message.indexOf('thrown string') !== -1)
-                    t.done()
                 } else {
                     realt.ok(false)
                 }
@@ -447,7 +451,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
         }).results()
 
         realt.ok(test.name === undefined)
-        realt.ok(test.results.length === 0)
+        realt.ok(test.results.length === 0, test.results.length)
         realt.ok(test.exceptions.length === 0)
         f.return()
     })
@@ -528,10 +532,9 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             this.ok(false, array)
             this.ok(false, error)
 
-            this.done()
-
         }).results()
 
+        this.ok(test.exceptions.length === 0)
         this.ok(test.results.length === 9)
             this.ok(test.results[0].values.length === 1)
                 this.ok(test.results[0].values[0] === "string")
@@ -571,11 +574,9 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             this.ok(true)
 
             this.test('two', function() {
-                this.count(4)
+                this.count(1)
                 this.ok(true)
             })
-
-            this.done()
         }).events({
             group: function(e) {
                 groupSequence(function() {
@@ -596,7 +597,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             count: function(e) {
                 countSequence(function() {
                     t.ok(e.success === undefined)
-                    t.ok(e.sourceLines === 'this.count(4)')
+                    t.ok(e.sourceLines === 'this.count(1)')
                 })
             },
             log: function(e) {
@@ -607,7 +608,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
             end: function(e) {
                 done.return()
                 endSequence(function() {
-                    t.ok(e.type === 'normal')
+                    t.ok(e.type === 'normal', e.type)
                 })
             }
         })
@@ -620,6 +621,7 @@ var mainTest = OldDeadunit.test("Unit test the unit test-results (these should a
         var endSequence = sequence()
 
         Unit.test(function() {
+            this.count(1) // waiting for 1 assert that will never come
             this.timeout(10)
         }).events({
             end: function(e) {
