@@ -1,0 +1,22 @@
+<body>
+</body>
+<script src='../node_modules/requirejs/require.js'></script>
+<script>
+    "use strict";
+
+    require.config({
+        paths: {
+            "deadunitCore": "../browserPackage/deadunitCore.browser.gen.umd",
+            "deadunitTests": "deadunitTests.browser.umd"
+        }
+    })
+
+    require(['deadunitCore', 'deadunitTests'], function(Unit, deadunitTests) {
+        var test = Unit.test(deadunitTests.name, deadunitTests.getTests(Unit, {return: function(){}}))
+        test.events({end: function(e) {
+            console.dir(test.results())
+            //console.log(JSON.stringify(test.results()))
+        }})
+    })
+
+</script>

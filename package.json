@@ -4,24 +4,27 @@
  "version":"2.0.0",
  "dependencies":{
      "stack-trace":"",
-     "proto":""
+     "proto":"1.0.6",
+     "build-modules": "1.0.6"
  },
  "devDependencies": {
-	"async-future":"",
-    "deadunit":"https://github.com/fresheneesz/deadunit/archive/7f167c4fa28e17101a99da9221902ced16587ebb.tar.gz",
-    "fibers":""
+	"async-future":"0.1.6",
+    "deadunit":"2.0.1",
+    "fibers":"",
+    "requirejs":""
  },
  "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
  "license": {
    "name": "MIT",
    "url": "http://www.opensource.org/licenses/mit-license.php"
  },
- "main": "deadunitCore.js",
+ "main": "deadunitCore.node.js",
  "repository": {
    "type": "git",
    "url": "git://github.com/fresheneesz/deadunitCore"
  },
  "scripts": {
-   "test": "node test/testDeadunitCore"
+   "test": "node test/testDeadunitCore",
+   "NOT postinstall": "node build.js"
  }
 }

@@ -65,7 +65,15 @@ npm install deadunit-core
 Usage
 =====
 ```javascript
-var Unit = require('deadunit-core')
+var Unit = require('deadunit-core') // node.js
+
+// require js
+require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(Unit) {
+   // ...
+}
+
+// browser global (the global variable will be 'deaunitCore')
+<script src='node_modules/browserPackage/deadunitCore.browser.gen.umd'></script>
 ```
 
 `Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object.
@@ -229,22 +237,12 @@ UnitTest
 }
 ```
 
-Note about tests with asynchronous parts
-========================================
-
-Javascript (and node.js especially) has a lot of asynchronous parts.
-Deadunit allows your tests to run asychronously/concurrently, but you have to manage that concurrency.
-
-I recommend that you use either:
-
-* [`fibers/future`s](https://github.com/laverdet/node-fibers#futures),
-* or my own [async-futures](https://github.com/fresheneesz/asyncFuture)
-
 To Do
 =====
 
-* Allow actual and expected to be set as undefined (without causing them to not show up) - this would require some tricky magic
-* do something about the dependence on node.js domains (so browsers can use deadunit)
+
+* Add getting source lines for tests in browser
+* Get rid of `Unit.error` and make `test.error` catch unhandled exceptions from child tests (if the child tests don't have their own handler)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
 * fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines, and also so it strips off the "this.ok()" part of the line (which is useless to print)
 
@@ -273,11 +271,14 @@ How to submit pull requests:
 Changelog
 ========
 
+* 2.0.1
+ * Browser support! Supports chrome only at this point.
 * 2.0.0 - *Breaking Change*
  * tests use `this.count` to determine when tests are done
  * added an event driven api for maximal flexibility.
  * tests can time out, added timeout control
  * count is no longer an assertEvent, but a countEvent
+ * sourceLines is now a string rather than an array
 * 1.1.3 - Fixed a bug with times when fibers die mid-test
 * 1.1.2 - Changed `log` interface to be able to pass in multiple values
 * 1.1.1 - enabled tests to still get all executed test results even if a [fiber](https://github.com/laverdet/node-fibers) dies midway through a test group
