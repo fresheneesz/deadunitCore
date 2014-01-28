@@ -244,18 +244,29 @@ To Do
 * Add getting source lines for tests in browser
 * Get rid of `Unit.error` and make `test.error` catch unhandled exceptions from child tests (if the child tests don't have their own handler)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
-* fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines, and also so it strips off the "this.ok()" part of the line (which is useless to print)
+* fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines
+  * maybe also so it strips off the "this.ok()" part of the line
+
+Environment/Browser Support
+=============
+
+* node.js
+* Chrome 31
+* Firefox 26
+* IE 10
+
+This needs more testing! Please help by testing and reporting bugs in other browsers or browser versions!
 
 How to Contribute!
 ============
 
-Anything helps:
+###Anything helps
 
 * Creating issues (aka tickets/bugs/etc). Please feel free to use issues to report bugs, request features, and discuss changes.
 * Updating the documentation: ie this readme file. Be bold! Help create amazing documentation!
 * Submitting pull requests.
 
-How to submit pull requests:
+###How to submit pull requests
 
 1. Please create an issue and get my input before spending too much time creating a feature. Work with me to ensure your feature or addition is optimal and fits with the purpose of the project.
 2. Fork the repository
@@ -271,6 +282,8 @@ How to submit pull requests:
 Changelog
 ========
 
+* 2.0.2
+ * Firefox and IE support!
 * 2.0.1
  * Browser support! Supports chrome only at this point.
 * 2.0.0 - *Breaking Change*

@@ -3,6 +3,7 @@
 
 var deadunitCore = require("./deadunitCore")
 var Future = require('async-future')
+var stackinfo = require('stackinfo')
 
 module.exports = deadunitCore({
     initialize: function() {},
@@ -47,6 +48,10 @@ module.exports = deadunitCore({
                 error: e
             })
         }
+    },
+
+    getLineInfo: function(stackIncrease) {
+        return stackinfo()[3+stackIncrease]
     }
 })
 

@@ -3,7 +3,6 @@
 
 var path = require('path')
 
-var stackTrace = require('stack-trace')
 var proto = require('proto')
 var Future = require('async-future')
 
@@ -352,20 +351,14 @@ module.exports = function(options) {
 
 
     function getLineInformation(functionName, stackIncrease) {
-        var backTrace = stackTrace.get();
-        var stackPosition = backTrace[2+stackIncrease]
-
-        var filename = stackPosition.getFileName()
-        var lineNumber = stackPosition.getLineNumber()
-        var column = stackPosition.getColumnNumber()
-
-        var sourceLines = getFunctionCallLines(filename, functionName, lineNumber)
+        var info = options.getLineInfo(stackIncrease)
+        var sourceLines = getFunctionCallLines(info.file, functionName, info.line)
 
         return {
             sourceLines: sourceLines,
-            file: path.basename(filename),
-            line: lineNumber,
-            column: column
+            file: path.basename(info.file),
+            line: info.line,
+            column: info.column
         }
     }
 

@@ -3,8 +3,9 @@
  "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
  "version":"2.0.0",
  "dependencies":{
-     "stack-trace":"",
-     "proto":"1.0.6",
+     "stack-trace":"0.0.7",
+     "stackinfo":"1.0.0",
+     "proto":"1.0.8",
      "build-modules": "1.0.6"
  },
  "devDependencies": {

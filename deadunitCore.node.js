@@ -4,6 +4,8 @@
 var domain = require('domain').create
 var fs = require('fs')
 
+var stackTrace = require('stack-trace')
+
 var deadunitCore = require("./deadunitCore")
 
 module.exports = deadunitCore({
@@ -53,6 +55,21 @@ module.exports = deadunitCore({
     defaultUnhandledErrorHandler: defaultUnhandledErrorHandler,
     defaultTestErrorHandler: function(tester) {
         return defaultUnhandledErrorHandler
+    },
+
+    getLineInfo: function(stackIncrease) {
+        var backTrace = stackTrace.get();
+        var stackPosition = backTrace[3+stackIncrease]
+
+        var filename = stackPosition.getFileName()
+        var lineNumber = stackPosition.getLineNumber()
+        var column = stackPosition.getColumnNumber()
+
+        return {
+            file: filename,
+            line: lineNumber,
+            column: column
+        }
     }
 })
 
