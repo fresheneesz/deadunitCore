@@ -236,26 +236,25 @@ UnitTest
    values: _         // the logged values
 }
 ```
+Environment/Browser Support
+=============
+
+* node.js
+* Browsers
+ * Chrome 31
+ * Firefox 26
+ * IE 10
+
+This needs more testing! Please help by testing and reporting bugs in other browsers or browser versions!
 
 To Do
 =====
-
 
 * Add getting source lines for tests in browser
 * Get rid of `Unit.error` and make `test.error` catch unhandled exceptions from child tests (if the child tests don't have their own handler)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
 * fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines
   * maybe also so it strips off the "this.ok()" part of the line
-
-Environment/Browser Support
-=============
-
-* node.js
-* Chrome 31
-* Firefox 26
-* IE 10
-
-This needs more testing! Please help by testing and reporting bugs in other browsers or browser versions!
 
 How to Contribute!
 ============
