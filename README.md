@@ -251,6 +251,9 @@ To Do
 =====
 
 * Add getting source lines for tests in browser
+* There's already a way to work around dead fibers, but still need to make a way to work around dead futures
+  * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
+    * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)
 * Get rid of `Unit.error` and make `test.error` catch unhandled exceptions from child tests (if the child tests don't have their own handler)
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
 * fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines
@@ -281,6 +284,8 @@ How to Contribute!
 Changelog
 ========
 
+* 2.0.4
+ * Making logs come out in real-time instead of waiting for the scheduler (using setTimeout).
 * 2.0.2
  * Firefox and IE support!
 * 2.0.1

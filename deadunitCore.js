@@ -102,9 +102,13 @@ module.exports = function(options) {
         // emits an event
         this.emit = function(type, eventData) {
             this.handlers[type].forEach(function(handler) {
-                setTimeout(function() { // next tick
+                try {
                     handler.call(undefined, eventData)
-                },0)
+                } catch(e) {
+                    setTimeout(function() {
+                        throw e // throw error asynchronously because these error should be separate from the test exceptions
+                    },0)
+                }
             })
             this.history.push({type:type, data: eventData})
         }
