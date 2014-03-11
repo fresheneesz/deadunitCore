@@ -284,6 +284,8 @@ How to Contribute!
 Changelog
 ========
 
+* 2.0.6
+ * Fixing bug when a test event handler is called inside a test event handler. So meta.
 * 2.0.5
  * Making logs come out in real-time instead of waiting for the scheduler (using setTimeout).
 * 2.0.2

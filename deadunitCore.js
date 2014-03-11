@@ -101,6 +101,7 @@ module.exports = function(options) {
 
         // emits an event
         this.emit = function(type, eventData) {
+            this.history.push({type:type, data: eventData})
             this.handlers[type].forEach(function(handler) {
                 try {
                     handler.call(undefined, eventData)
@@ -110,7 +111,6 @@ module.exports = function(options) {
                     },0)
                 }
             })
-            this.history.push({type:type, data: eventData})
         }
 
         // adds a set of listening handlers to the event stream, and runs those handlers on the stream's history

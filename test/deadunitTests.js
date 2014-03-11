@@ -589,6 +589,25 @@ exports.getTests = function(Unit, isDone) {
                     }
                 })
         })
+
+        this.test('event stream nested call', function(t) {
+            this.count(1)
+
+            var unittest = Unit.test(function() {
+                this.count(1) // waiting for 1 assert that will never come
+                this.timeout(10)
+            })
+
+            unittest.events({
+                end: function(e) {
+                    unittest.events({
+                        end: function() {
+                            t.ok(true)
+                        }
+                    })
+                }
+            })
+        })
         //*/
 
         Future.all(moreFutures).then(function() {
