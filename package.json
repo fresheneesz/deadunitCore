@@ -1,7 +1,7 @@
 {"name":"deadunit-core",
  "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript and node.js.",
  "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
- "version":"2.0.7",
+ "version":"2.0.8",
  "dependencies":{
      "stack-trace":"0.0.7",
      "stackinfo":"1.0.2",
