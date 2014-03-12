@@ -284,6 +284,8 @@ How to Contribute!
 Changelog
 ========
 
+* 2.0.7
+ * Increasing stackinfo version to get minor chrome stacktrace info improvements
 * 2.0.6
  * Fixing bug when a test event handler is called inside a test event handler. So meta.
 * 2.0.5
