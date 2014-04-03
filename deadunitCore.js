@@ -124,7 +124,12 @@ module.exports = function(options) {
 
             // then have those handlers listen on future events
             for(var type in handlers) {
-                this.handlers[type].push(handlers[type])
+                var typeHandlers = this.handlers[type]
+                if(typeHandlers === undefined) {
+                    throw new Error("event type '"+type+"' invalid")
+                }
+
+                typeHandlers.push(handlers[type])
             }
         }
     })
@@ -296,13 +301,18 @@ module.exports = function(options) {
     }
 
     function done(unitTester) {
-        if(unitTester.mainTester.ended)
-            throw Error("done called more than once")
-
-        endTest(unitTester, 'normal')
-        unitTester.mainTester.timeouts.forEach(function(to) {
-            clearTimeout(to)
-        })
+        if(unitTester.mainTester.ended) {
+            unitTester.mainTester.manager.emit('exception', {
+                parent: unitTester.mainTester.mainSubTest.id,
+                time: now(),
+                error: new Error("done called more than once (probably because the test timed out before it finished)")
+            })
+        } else {
+            endTest(unitTester, 'normal')
+            unitTester.mainTester.timeouts.forEach(function(to) {
+                clearTimeout(to)
+            })
+        }
     }
 
     // if a timeout is the default, it can be overridden
@@ -382,7 +392,7 @@ module.exports = function(options) {
                     return lines.reverse().join('\n')
                 }
                 if(lineNumber - n < 0) {
-                    throw Error("Didn't get any lines")//return ""	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
+                    return "<no lines found (possibly an error?)> "	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
                 }
             }
         } else {

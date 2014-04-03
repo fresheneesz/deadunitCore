@@ -284,6 +284,8 @@ How to Contribute!
 Changelog
 ========
 
+* 2.0.9
+ * fixing silent-failure issue when the test times out before it completes synchronously
 * 2.0.7
  * Increasing stackinfo version to get minor chrome stacktrace info improvements
 * 2.0.6

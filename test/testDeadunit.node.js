@@ -10,7 +10,7 @@ var isDone = new Future
 var mainTest = OldDeadunit.test(tests.name, function() {
 
     this.test('node-specific tests', function() {
-        this.count(1)
+        this.count(2)
 
         // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
         // which causes the program to exit in what should be the middle of a continuation
@@ -64,6 +64,33 @@ var mainTest = OldDeadunit.test(tests.name, function() {
                 t.ok(results.results[1].duration !== undefined, results.results[1].duration)
                 t.ok(results.results[1].duration >= 0, results.results[1].duration)
             }).done()
+        })
+
+        this.test('error hiding when internal exception is thrown', function(t) {
+            this.count(2)
+            var Fiber = require('fibers')
+            var FibersFuture = require('fibers/future')
+
+            Fiber(function() {
+                var test = Unit.test(function() {
+                    this.timeout(0)
+                    var f = new FibersFuture
+                    setTimeout(function() {
+                        f.return()
+                    },100)
+                    f.wait()
+                    console.log('hi')
+                })
+
+                test.events({
+                    end: function() {
+                        console.log('oeviwew')
+                        var exceptions = test.results().exceptions
+                        t.ok(exceptions.length === 1, exceptions.length)
+                        t.ok(exceptions[0].message === "done called more than once (probably because the test timed out before it finished)", exceptions[0].message)
+                    }
+                })
+            }).run()
         })
     })
 
