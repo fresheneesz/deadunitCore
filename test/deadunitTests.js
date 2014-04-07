@@ -9,7 +9,7 @@ exports.getTests = function(Unit, isDone) {
 
     return function() {
 
-        //*
+        /*
         this.test('simple success', function(t) {
             this.count(3)
             var test = Unit.test(function() {

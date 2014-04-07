@@ -11,13 +11,13 @@ var mainTest = OldDeadunit.test(tests.name, function() {
 
     this.test('node-specific tests', function() {
         this.count(1)
+        this.timeout(3000)
 
         // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
         // which causes the program to exit in what should be the middle of a continuation
         // this test is about making sure that you can at least see the results that were collected within that incomplete test
         this.test('fibers/futures - never-resolved future problem', function(t) {
             this.count(10)
-            this.timeout(300)
 
             var Fiber = require('fibers')
             var FibersFuture = require('fibers/future')

@@ -13,7 +13,7 @@
 
     require(['deadunitCore', 'deadunitTests'], function(Unit, deadunitTests) {
         var test = Unit.test(deadunitTests.name, deadunitTests.getTests(Unit, {return: function(){}}))
-        test.events({end: function(e) {
+        test.events({end: function() {
             console.dir(test.results())
             //console.log(JSON.stringify(test.results()))
         }})

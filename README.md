@@ -279,14 +279,15 @@ How to Contribute!
 4. If you're gonna work on multiple separate things, its best to create a separate branch for each of them
 5. edit!
 6. If it's a code change, please add to the unit tests (at test/testDeadunitCore.js) to verify that your change
- * Note that if the unit tests don't quit to console very quickly (less than a second) after the test prints out, there's something wrong - probably a timeout that hasn't completed.
 7. When you're done, run the unit tests and ensure they all pass
+  * Make sure you run `node build.js` to build the browser packages (browserPackage/deadunitCore.browser.gen.umd.js and test/deadunitTests.browser.umd.js) before running the browser tests
 8. Commit and push your changes
 9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
 
 Changelog
 ========
 
+* 3.0.1 - moving build-modules (which uses browserify) to be a devDependency
 * 3.0.0
  * making top-level test run asynchronously to make some things work better with node fibers
  * since this means you basically always have to wait for the 'end' event before getting results, it may break old tests (fixable with minor tweaking), so upping major versions
