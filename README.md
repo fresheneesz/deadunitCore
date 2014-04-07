@@ -287,6 +287,7 @@ How to Contribute!
 Changelog
 ========
 
+* 3.0.2 - get rid of late events warning in deadunit-core (thats a job for deadunit proper)
 * 3.0.1 - moving build-modules (which uses browserify) to be a devDependency
 * 3.0.0
  * making top-level test run asynchronously to make some things work better with node fibers

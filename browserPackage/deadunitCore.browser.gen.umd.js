@@ -1866,24 +1866,6 @@ module.exports = function returnResults(unitTestObject, printLateEvents) {
     var primaryGroup;
     var ended = false
 
-    var warningWritten = false
-    function warnAboutLateEvents() {
-        if(!warningWritten) {
-            unitTestObject.mainTester.mainTester.mainTestState.unhandledErrorHandler(
-                'Test results were accessed before asynchronous parts of tests were fully complete'
-                +" If you have tests with asynchronous parts, make sure to use `this.count` to declare how many assertions you're waiting for."
-            )
-            warningWritten = true
-        }
-    }
-
-    function writeLateEvent(ended, eventToPrint) {
-        if(ended && printLateEvents) {
-            warnAboutLateEvents()
-            unitTestObject.mainTester.mainTester.mainTestState.unhandledErrorHandler(eventToPrint)
-        }
-    }
-
     unitTestObject.events({
         group: function(e) {
             var g = {
@@ -1911,29 +1893,21 @@ module.exports = function returnResults(unitTestObject, printLateEvents) {
             }
         },
         assert: function(e) {
-            writeLateEvent(ended,JSON.stringify(e))
-
             e.type = 'assert'
             groups[e.parent].results.push(e)
             setGroupDuration(e.parent, e.time)
         },
         count: function(e) {
-            writeLateEvent(ended,JSON.stringify(e))
-
             e.type = 'assert'
             setGroupDuration(e.parent, e.time)
 
             groupMetadata[e.parent].countInfo = e
         },
         exception: function(e) {
-            writeLateEvent(ended,"Error: At time: "+e.time+" "+(e.error.stack?e.error.stack:e.error.toString()))
-
             groups[e.parent].exceptions.push(e.error)
             setGroupDuration(e.parent, e.time)
         },
         log: function(e) {
-            writeLateEvent(ended,JSON.stringify(e))
-
             e.type = 'log'
             groups[e.parent].results.push(e)
             setGroupDuration(e.parent, e.time)

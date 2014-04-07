@@ -9,7 +9,6 @@ exports.getTests = function(Unit, isDone) {
 
     return function() {
 
-        /*
         this.test('simple success', function(t) {
             this.count(3)
             var test = Unit.test(function() {
@@ -87,7 +86,7 @@ exports.getTests = function(Unit, isDone) {
 
             moreFutures.push(simpleAsyncExceptionFutureDone)
         })
-
+        //*
         this.test('Testing "Full deadunit test"', function() {
             this.count(10)
 
@@ -199,7 +198,7 @@ exports.getTests = function(Unit, isDone) {
                         this.ok(subtest3.success === true)
                         this.ok(subtest3.sourceLines.indexOf("5 === 5") !== -1)
                         this.ok(subtest3.file === "deadunitTests.js")
-                        this.ok(subtest3.line === 99, subtest3.line)
+                        this.ok(subtest3.line === 98, subtest3.line)
                         //this.ok(subtest3.column === 9, subtest3.column)
 
                         subtest2 = subtest1.results[1]
@@ -218,7 +217,7 @@ exports.getTests = function(Unit, isDone) {
                         this.ok(subtest3.success === false)
                         this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
                         this.ok(subtest3.file === "deadunitTests.js")
-                        this.ok(subtest3.line === 103, subtest3.line)
+                        this.ok(subtest3.line === 102, subtest3.line)
                         //this.ok(subtest3.column === 9, subtest3.column)
 
                         subtest3 = subtest2.results[2]
@@ -489,7 +488,6 @@ exports.getTests = function(Unit, isDone) {
             realt.ok(test.exceptions.length === 0)
             f.return()
         })
-        */
 
 
         this.test('logs', function() {
