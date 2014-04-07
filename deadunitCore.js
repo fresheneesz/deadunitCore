@@ -45,8 +45,28 @@ module.exports = function(options) {
     // the prototype of objects used to manage accessing and displaying results of a unit test
     var UnitTest = proto(function() {
         this.init = function(/*mainName=undefined, groups*/) {
+            var that = this
+            var args = arguments
             this.manager = EventManager()
 
+            setTimeout(function() {
+                runTest.call(that, args)
+            },0)
+        }
+
+        this.events = function(handlers) {
+            this.manager.add(handlers)
+            return this
+        }
+
+        this.results = function(printLateEvents) {
+            if(printLateEvents === undefined) printLateEvents = true
+            return processResults(this, printLateEvents)
+        }
+
+        // private
+
+        function runTest(args) {
             var fakeTest = new UnitTester()
                 fakeTest.id = undefined // fake test doesn't get an id
                 fakeTest.manager = this.manager
@@ -62,20 +82,11 @@ module.exports = function(options) {
                     options.mainTestDone(fakeTest.mainTestState)
                 }
 
-            fakeTest.mainSubTest = UnitTester.prototype.test.apply(fakeTest, arguments) // set so the error handler can access the real test
+            fakeTest.mainSubTest = UnitTester.prototype.test.apply(fakeTest, args) // set so the error handler can access the real test
             this.mainTester = fakeTest
 
             fakeTest.groupEnded = true
             checkGroupDone(fakeTest)
-        }
-
-        this.events = function(handlers) {
-            this.manager.add(handlers)
-        }
-
-        this.results = function(printLateEvents) {
-            if(printLateEvents === undefined) printLateEvents = true
-            return processResults(this, printLateEvents)
         }
     })
 

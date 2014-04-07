@@ -67,7 +67,7 @@ module.exports = function returnResults(unitTestObject, printLateEvents) {
             groupMetadata[e.parent].countInfo = e
         },
         exception: function(e) {
-            writeLateEvent(ended,"At time: "+e.time+" "+(e.error.stack?e.error.stack:e.error.toString()))
+            writeLateEvent(ended,"Error: At time: "+e.time+" "+(e.error.stack?e.error.stack:e.error.toString()))
 
             groups[e.parent].exceptions.push(e.error)
             setGroupDuration(e.parent, e.time)

@@ -10,39 +10,56 @@ exports.getTests = function(Unit, isDone) {
     return function() {
 
         //*
-        this.test('simple success', function() {
+        this.test('simple success', function(t) {
+            this.count(3)
             var test = Unit.test(function() {
                 this.ok(true)
-            }).results()
+            }).events({
+                end: function() {
+                    var results = test.results()
 
-            this.ok(test.name === undefined, test.name)
-            this.ok(test.results.length === 1)
-            this.ok(test.results[0].success === true)
+                    t.ok(results.name === undefined, results.name)
+                    t.ok(results.results.length === 1)
+                    t.ok(results.results[0].success === true)
+                }
+            })
         })
 
-        this.test('simple failure', function() {
+        this.test('simple failure', function(t) {
+            this.count(3)
             var test = Unit.test(function() {
                 this.ok(false)
-            }).results()
+            }).events({
+                end: function() {
+                    var results = test.results()
 
-            this.ok(test.name === undefined)
-            this.ok(test.results.length === 1)
-            this.ok(test.results[0].success === false)
+                    t.ok(results.name === undefined)
+                    t.ok(results.results.length === 1)
+                    t.ok(results.results[0].success === false)
+                }
+            })
         })
-        this.test('simple exception', function() {
+        this.test('simple exception', function(t) {
+            this.count(4)
             var test = Unit.test(function() {
                 this.count(1)
-                this.timeout(100) // just to make the test end faster
+                this.timeout(0) // just to make the test end faster
                 throw Error("sync")
-            }).results()
+            }).events({
+                end: function() {
+                    var results = test.results()
 
-            this.ok(test.name === undefined)
-            this.ok(test.exceptions.length === 1)
-            this.ok(test.exceptions[0].message === 'sync')
-            this.ok(test.timeout === undefined, test.timeout) // the test hasn't end yet
+                    t.ok(results.name === undefined)
+                    t.ok(results.exceptions.length === 1)
+                    t.ok(results.exceptions[0].message === 'sync')
+                    t.ok(results.timeout === true, results.timeout)
+                }
+            })
         })
 
         this.test('simple async exception', function(t) {
+            this.count(4)
+
             var simpleAsyncExceptionFuture = new Future, simpleAsyncExceptionFutureDone = new Future
             var simpleAsyncExceptionTest = Unit.test(function(t) {
                 this.count(1)
@@ -53,18 +70,20 @@ exports.getTests = function(Unit, isDone) {
                     }, 0)
                     throw Error("Async")
                 }, 0)
+            }).events({
+                end: function() {
+                    simpleAsyncExceptionFuture.then(function() {
+                        var test = simpleAsyncExceptionTest.results()
+
+                        t.ok(test.name === undefined)
+                        t.ok(test.exceptions.length === 1)
+                        t.ok(test.exceptions[0].message === 'Async')
+                        t.ok(test.timeout === false)
+
+                        simpleAsyncExceptionFutureDone.return()
+                    }).done()
+                }
             })
-
-            simpleAsyncExceptionFuture.then(function() {
-                var test = simpleAsyncExceptionTest.results()
-
-                t.ok(test.name === undefined)
-                t.ok(test.exceptions.length === 1)
-                t.ok(test.exceptions[0].message === 'Async')
-                t.ok(test.timeout === false)
-
-                simpleAsyncExceptionFutureDone.return()
-            }).done()
 
             moreFutures.push(simpleAsyncExceptionFutureDone)
         })
@@ -144,148 +163,150 @@ exports.getTests = function(Unit, isDone) {
                 setTimeout(function() {    // why is this here? Possibly to make sure the "asynchronous errors" finish first?
                     f.return()
                 },50)
-            })
+            }).events({end: function() {
 
-            var futuresForThisTest = Future.all(futuresToWaitOn)
-            moreFutures.push(futuresForThisTest)
-            futuresForThisTest.then(function() {
-                var test = testGroups.results()
+                var futuresForThisTest = Future.all(futuresToWaitOn)
+                moreFutures.push(futuresForThisTest)
+                futuresForThisTest.then(function() {
+                    var test = testGroups.results()
 
-                this.ok(test.timeout === false, test.timeout)
-                this.ok(test.type === "group")
-                this.ok(test.name === "Full deadunit test (results of this will be verified)")
-                this.ok(test.syncDuration !== undefined && test.syncDuration > 0, test.syncDuration)
-                this.ok(test.exceptions.length === 0)
-                this.ok(test.results.length === 4, test.results.length)
+                    this.ok(test.timeout === false, test.timeout)
+                    this.ok(test.type === "group")
+                    this.ok(test.name === "Full deadunit test (results of this will be verified)")
+                    this.ok(test.syncDuration !== undefined && test.syncDuration > 0, test.syncDuration)
+                    this.ok(test.exceptions.length === 0)
+                    this.ok(test.results.length === 4, test.results.length)
 
-                this.test("Verify 'Test Some Stuff'", function() {
-                    this.count(50)
+                    this.test("Verify 'Test Some Stuff'", function() {
+                        this.count(50)
 
-                    var subtest1 = test.results[0]
-                    this.ok(subtest1.type === "group")
-                    this.ok(subtest1.name === "Test Some Stuff")
-                    this.ok(subtest1.syncDuration !== undefined && subtest1.syncDuration > 0 && subtest1.syncDuration < 100, subtest1.syncDuration)
-                    this.ok(subtest1.totalSyncDuration !== undefined && subtest1.totalSyncDuration >= subtest1.totalSyncDuration)  // totalDuration is the duration including before and after
-                    this.ok(subtest1.exceptions.length === 0)
-                    this.ok(subtest1.results.length === 7, subtest1.results.length)
+                        var subtest1 = test.results[0]
+                        this.ok(subtest1.type === "group")
+                        this.ok(subtest1.name === "Test Some Stuff")
+                        this.ok(subtest1.syncDuration !== undefined && subtest1.syncDuration > 0 && subtest1.syncDuration < 100, subtest1.syncDuration)
+                        this.ok(subtest1.totalSyncDuration !== undefined && subtest1.totalSyncDuration >= subtest1.totalSyncDuration)  // totalDuration is the duration including before and after
+                        this.ok(subtest1.exceptions.length === 0)
+                        this.ok(subtest1.results.length === 7, subtest1.results.length)
 
-                    var subtest2 = subtest1.results[0]
-                    this.ok(subtest2.type === "group")
-                    this.ok(subtest2.name === "assertSomething")
-                    this.ok(subtest2.exceptions.length === 0)
-                    this.ok(subtest2.results.length === 1)
+                        var subtest2 = subtest1.results[0]
+                        this.ok(subtest2.type === "group")
+                        this.ok(subtest2.name === "assertSomething")
+                        this.ok(subtest2.exceptions.length === 0)
+                        this.ok(subtest2.results.length === 1)
 
-                    var subtest3 = subtest2.results[0]
-                    this.ok(subtest3.type === "assert")
-                    this.ok(subtest3.success === true)
-                    this.ok(subtest3.sourceLines.indexOf("5 === 5") !== -1)
-                    this.ok(subtest3.file === "deadunitTests.js")
-                    this.ok(subtest3.line === 80, subtest3.line)
-                    //this.ok(subtest3.column === 9, subtest3.column)
+                        var subtest3 = subtest2.results[0]
+                        this.ok(subtest3.type === "assert")
+                        this.ok(subtest3.success === true)
+                        this.ok(subtest3.sourceLines.indexOf("5 === 5") !== -1)
+                        this.ok(subtest3.file === "deadunitTests.js")
+                        this.ok(subtest3.line === 99, subtest3.line)
+                        //this.ok(subtest3.column === 9, subtest3.column)
 
-                    subtest2 = subtest1.results[1]
-                    this.ok(subtest2.name === "'shouldFail' fails correctly", subtest2.name)
-                    this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
-                    this.ok(subtest2.exceptions.length === 0)
-                    this.ok(subtest2.results.length === 4, subtest2.results.length)
+                        subtest2 = subtest1.results[1]
+                        this.ok(subtest2.name === "'shouldFail' fails correctly", subtest2.name)
+                        this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
+                        this.ok(subtest2.exceptions.length === 0)
+                        this.ok(subtest2.results.length === 4, subtest2.results.length)
 
-                    subtest3 = subtest2.results[0]
-                    this.ok(subtest3.success === false)
-                    this.ok(subtest3.sourceLines.indexOf("5 === 3") !== -1)
-                    this.ok(subtest3.actual === 'actual')
-                    this.ok(subtest3.expected === 'expected')
+                        subtest3 = subtest2.results[0]
+                        this.ok(subtest3.success === false)
+                        this.ok(subtest3.sourceLines.indexOf("5 === 3") !== -1)
+                        this.ok(subtest3.actual === 'actual')
+                        this.ok(subtest3.expected === 'expected')
 
-                    subtest3 = subtest2.results[1]
-                    this.ok(subtest3.success === false)
-                    this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
-                    this.ok(subtest3.file === "deadunitTests.js")
-                    this.ok(subtest3.line === 84, subtest3.line)
-                    //this.ok(subtest3.column === 9, subtest3.column)
+                        subtest3 = subtest2.results[1]
+                        this.ok(subtest3.success === false)
+                        this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
+                        this.ok(subtest3.file === "deadunitTests.js")
+                        this.ok(subtest3.line === 103, subtest3.line)
+                        //this.ok(subtest3.column === 9, subtest3.column)
 
-                    subtest3 = subtest2.results[2]
-                    this.ok(subtest3.type === "log")
-                    this.ok(subtest3.values.length === 1)
-                    this.ok(subtest3.values[0] === "test log")
+                        subtest3 = subtest2.results[2]
+                        this.ok(subtest3.type === "log")
+                        this.ok(subtest3.values.length === 1)
+                        this.ok(subtest3.values[0] === "test log")
 
 
-                    subtest3 = subtest2.results[3]      // count
-                    this.ok(subtest3.type === "assert", subtest3.type)
-                    this.ok(subtest3.success === true, subtest3.success)
+                        subtest3 = subtest2.results[3]      // count
+                        this.ok(subtest3.type === "assert", subtest3.type)
+                        this.ok(subtest3.success === true, subtest3.success)
 
-                    subtest2 = subtest1.results[2]
-                    this.ok(subtest2.name === "shouldThrowException")
-                    this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
-                    this.ok(subtest2.exceptions.length === 1)
-                    this.ok(subtest2.exceptions[0].message === "Ahhhhh!")
-                    this.ok(subtest2.results.length === 2, subtest2.results.length)
+                        subtest2 = subtest1.results[2]
+                        this.ok(subtest2.name === "shouldThrowException")
+                        this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
+                        this.ok(subtest2.exceptions.length === 1)
+                        this.ok(subtest2.exceptions[0].message === "Ahhhhh!")
+                        this.ok(subtest2.results.length === 2, subtest2.results.length)
 
-                    subtest3 = subtest2.results[0]
-                    this.ok(subtest3.success === true)
+                        subtest3 = subtest2.results[0]
+                        this.ok(subtest3.success === true)
 
-                    subtest3 = subtest2.results[1]     // count
-                    this.ok(subtest3.success === true)
+                        subtest3 = subtest2.results[1]     // count
+                        this.ok(subtest3.success === true)
 
-                    subtest2 = subtest1.results[3]
-                    this.ok(subtest2.name === "should throw an asynchronous exception")
-                    this.ok(subtest2.exceptions.length === 1)
-                    this.ok(subtest2.exceptions[0].message === "Asynchronous Ahhhhh!")
-                    this.ok(subtest2.results.length === 2, subtest2.results.length)
+                        subtest2 = subtest1.results[3]
+                        this.ok(subtest2.name === "should throw an asynchronous exception")
+                        this.ok(subtest2.exceptions.length === 1)
+                        this.ok(subtest2.exceptions[0].message === "Asynchronous Ahhhhh!")
+                        this.ok(subtest2.results.length === 2, subtest2.results.length)
 
-                    this.ok(subtest1.results[4].type === 'log', subtest1.results[4].type) // log
-                    this.ok(subtest1.results[4].values[0] === 'subtest without a name')
+                        this.ok(subtest1.results[4].type === 'log', subtest1.results[4].type) // log
+                        this.ok(subtest1.results[4].values[0] === 'subtest without a name')
 
-                    subtest2 = subtest1.results[5]
-                    this.ok(subtest2.name === undefined)
-                    this.ok(subtest2.exceptions.length === 0)
-                    this.ok(subtest2.results.length === 1)
-                    this.ok(subtest2.results[0].success === true)
+                        subtest2 = subtest1.results[5]
+                        this.ok(subtest2.name === undefined)
+                        this.ok(subtest2.exceptions.length === 0)
+                        this.ok(subtest2.results.length === 1)
+                        this.ok(subtest2.results[0].success === true)
 
-                    subtest2 = subtest1.results[6]     // count
-                    this.ok(subtest2.success === false, subtest2.success)
-                })
+                        subtest2 = subtest1.results[6]     // count
+                        this.ok(subtest2.success === false, subtest2.success)
+                    })
 
-                this.test("Verify 'SuccessfulTestGroup'", function() {
-                    this.count(8)
+                    this.test("Verify 'SuccessfulTestGroup'", function() {
+                        this.count(8)
 
-                    var subtest1 = test.results[1]
-                    this.ok(subtest1.name === "SuccessfulTestGroup")
-                    this.ok(subtest1.exceptions.length === 0)
-                    this.ok(subtest1.results.length === 1)
+                        var subtest1 = test.results[1]
+                        this.ok(subtest1.name === "SuccessfulTestGroup")
+                        this.ok(subtest1.exceptions.length === 0)
+                        this.ok(subtest1.results.length === 1)
 
-                    var subtest2 = subtest1.results[0]
-                    this.ok(subtest2.name === "yay")
-                    this.ok(subtest2.exceptions.length === 0)
-                    this.ok(subtest2.results.length === 1)
+                        var subtest2 = subtest1.results[0]
+                        this.ok(subtest2.name === "yay")
+                        this.ok(subtest2.exceptions.length === 0)
+                        this.ok(subtest2.results.length === 1)
 
-                    var subtest3 = subtest2.results[0]
-                    this.ok(subtest3.success === true)
-                    this.ok(subtest3.sourceLines.indexOf("true") !== -1)
-                })
+                        var subtest3 = subtest2.results[0]
+                        this.ok(subtest3.success === true)
+                        this.ok(subtest3.sourceLines.indexOf("true") !== -1)
+                    })
 
-                this.test("Verify 'long before/after'", function() {
-                    this.count(5)
+                    this.test("Verify 'long before/after'", function() {
+                        this.count(5)
 
-                    var subtest1 = test.results[2]
-                    this.ok(subtest1.name === "long before/after")
-                    this.ok(subtest1.exceptions.length === 0)
-                    this.ok(subtest1.results.length === 1)
-                    this.ok(subtest1.results[0].name === 'one')
-                    this.ok(subtest1.results[0].results[0].success === true, subtest1.results[0].file)
-                })
+                        var subtest1 = test.results[2]
+                        this.ok(subtest1.name === "long before/after")
+                        this.ok(subtest1.exceptions.length === 0)
+                        this.ok(subtest1.results.length === 1)
+                        this.ok(subtest1.results[0].name === 'one')
+                        this.ok(subtest1.results[0].results[0].success === true, subtest1.results[0].file)
+                    })
 
-                this.test("Verify 'asynchronous errors'", function() {
-                    this.count(5)
+                    this.test("Verify 'asynchronous errors'", function() {
+                        this.count(5)
 
-                    var subtest1 = test.results[3]
-                    this.ok(subtest1.name === "asynchronous errors")
-                    this.ok(subtest1.exceptions.length === 2)
-                    this.ok(subtest1.results.length === 0)
+                        var subtest1 = test.results[3]
+                        this.ok(subtest1.name === "asynchronous errors")
+                        this.ok(subtest1.exceptions.length === 2)
+                        this.ok(subtest1.results.length === 0)
 
-                    this.ok(subtest1.exceptions[0].message === 'moo')
-                    this.ok(subtest1.exceptions[1] === 'thrown string')
-                })
+                        this.ok(subtest1.exceptions[0].message === 'moo')
+                        this.ok(subtest1.exceptions[1] === 'thrown string')
+                    })
 
-            }.bind(this)).done()
+                }.bind(this)).done()
+
+                }.bind(this)})
 
         })
 
@@ -489,28 +510,32 @@ exports.getTests = function(Unit, isDone) {
                 this.ok(false, array)
                 this.ok(false, error)
 
-            }).results()
+            }).events({end: function() {
+                var results = test.results()
 
-            this.ok(test.exceptions.length === 0)
-            this.ok(test.results.length === 9)
-            this.ok(test.results[0].values.length === 1)
-            this.ok(test.results[0].values[0] === "string")
-            this.ok(test.results[1].values.length === 1)
-            this.ok(test.results[1].values[0] === object, test.results[1].values)
-            this.ok(test.results[2].values.length === 1)
-            this.ok(test.results[2].values[0] === array, test.results[2].values)
-            this.ok(test.results[3].values.length === 1)
-            this.ok(test.results[3].values[0] === error, test.results[3].values)
-            this.ok(test.results[4].values.length === 4)
-            this.ok(test.results[4].values[0] === "string", test.results[4].values[0])
-            this.ok(test.results[4].values[1] === object, test.results[4].values[1])
-            this.ok(test.results[4].values[2] === array, test.results[4].values[2])
-            this.ok(test.results[4].values[3] === error, test.results[4].values[3])
+                this.ok(results.exceptions.length === 0)
+                this.ok(results.results.length === 9)
+                this.ok(results.results[0].values.length === 1)
+                this.ok(results.results[0].values[0] === "string")
+                this.ok(results.results[1].values.length === 1)
+                this.ok(results.results[1].values[0] === object, results.results[1].values)
+                this.ok(results.results[2].values.length === 1)
+                this.ok(results.results[2].values[0] === array, results.results[2].values)
+                this.ok(results.results[3].values.length === 1)
+                this.ok(results.results[3].values[0] === error, results.results[3].values)
+                this.ok(results.results[4].values.length === 4)
+                this.ok(results.results[4].values[0] === "string", results.results[4].values[0])
+                this.ok(results.results[4].values[1] === object, results.results[4].values[1])
+                this.ok(results.results[4].values[2] === array, results.results[4].values[2])
+                this.ok(results.results[4].values[3] === error, results.results[4].values[3])
 
-            this.ok(test.results[5].actual === "string", test.results[5].actual)
-            this.ok(test.results[6].actual === object, test.results[6].actual)
-            this.ok(test.results[7].actual === array, test.results[7].actual)
-            this.ok(test.results[8].actual === error, test.results[8].actual)
+                this.ok(results.results[5].actual === "string", results.results[5].actual)
+                this.ok(results.results[6].actual === object, results.results[6].actual)
+                this.ok(results.results[7].actual === array, results.results[7].actual)
+                this.ok(results.results[8].actual === error, results.results[8].actual)
+            }.bind(this)})
+
+
         })
 
         this.test('event stream', function(t) {

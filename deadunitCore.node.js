@@ -76,8 +76,11 @@ module.exports = deadunitCore({
 function defaultUnhandledErrorHandler(e) {
     setTimeout(function() {
         if(e.stack)
-            console.log(e.stack)
+            var errorString = e.stack
         else
-            console.log(e)
+            var errorString = e.toString()
+
+        if(errorString.red !== undefined) errorString = errorString.red
+            console.log(errorString)
     },0)
 }

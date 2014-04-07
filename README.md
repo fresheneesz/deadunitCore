@@ -25,9 +25,13 @@ var test = Unit.test('some test name', function() {
     })
 
     this.done()
+}).events({
+ 	end: function() {
+    	console.dir(test.results())
+    }
 })
 
-console.dir(test.results())
+
 ```
 
 Event driven output
@@ -38,21 +42,20 @@ Unit.test('another test', function() {
     this.ok(obj.msg.indexof("hi") !== -1)
     this.done()
 }).events({
-    group: function(e) {
-        console.log(e.name +" started at "+e.time)
+    group: function(g) {
+        console.log(g.name +" started at "+g.time)
     },
     assert: function(e) {
         console.log(e.success +" - "+e.sourceLines)
     },
-    log: function(e) {
-        console.dir(e.values)
+    log: function(log) {
+        console.dir(log.values)
     },
-    end: function(e) {
+    end: function() {
         console.log("Done!")
     }
 })
 
-console.dir(test.results())
 ```
 
 Install
@@ -76,7 +79,7 @@ require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(U
 <script src='node_modules/browserPackage/deadunitCore.browser.gen.umd'></script>
 ```
 
-`Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object.
+`Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object. Returns without having run the tests first - the tests are scheduled to run asynchronously soon thereafter.
 
  * `<name>` - (optional) names the test
  * `<testFunction>` - a function that contains the asserts and sub-tests to be run. Both its one parameter and its bound `this` is given the same `UnitTester` object.
@@ -284,6 +287,9 @@ How to Contribute!
 Changelog
 ========
 
+* 3.0.0
+ * making top-level test run asynchronously to make some things work better with node fibers
+ * since this means you basically always have to wait for the 'end' event before getting results, it may break old tests (fixable with minor tweaking), so upping major versions
 * 2.0.9
  * fixing silent-failure issue when the test times out before it completes synchronously
 * 2.0.7
