@@ -287,6 +287,7 @@ How to Contribute!
 Changelog
 ========
 
+* 3.0.3 - fixing issue where the first timeout to expire would time the test out rather than the last timeout to expire
 * 3.0.2 - get rid of late events warning in deadunit-core (thats a job for deadunit proper)
 * 3.0.1 - moving build-modules (which uses browserify) to be a devDependency
 * 3.0.0
