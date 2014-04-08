@@ -420,10 +420,12 @@ module.exports = function(options) {
                 error: new Error("done called more than once (probably because the test timed out before it finished)")
             })
         } else {
-            endTest(unitTester, 'normal')
             unitTester.mainTester.timeouts.forEach(function(to) {
                 clearTimeout(to)
             })
+            unitTester.mainTester.timeouts = []
+
+            endTest(unitTester, 'normal')
         }
     }
 
@@ -432,8 +434,9 @@ module.exports = function(options) {
         that.mainTester.timeoutCount++
 
         var to = setTimeout(function() {
-            that.mainTester.timeoutCount--
-            if(that.mainTester.timeoutCount === 0 && !that.mainTester.ended) {
+            remove(that.mainTester.timeouts, to)
+
+            if(that.mainTester.timeouts.length === 0 && !that.mainTester.ended) {
                 endTest(that, 'timeout')
             }
         }, t)
@@ -444,7 +447,12 @@ module.exports = function(options) {
             that.mainTester.timeouts.default = to
         } else if(that.mainTester.timeouts.default !== undefined) {
             clearTimeout(that.mainTester.timeouts.default)
-            that.mainTester.timeoutCount--
+            remove(that.mainTester.timeouts, that.mainTester.timeouts.default)
+        }
+
+        function remove(array, item) {
+            var index = array.indexOf(item)
+            array.splice(index, 1)
         }
     }
 
