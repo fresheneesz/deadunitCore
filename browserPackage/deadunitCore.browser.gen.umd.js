@@ -173,6 +173,7 @@ module.exports = function(options) {
                 fakeTest.manager = this.manager
                 fakeTest.mainTester.timeoutCount = 0
                 fakeTest.timeouts = []
+                fakeTest.onDoneCallbacks = []
                 fakeTest.mainTestState = {get unhandledErrorHandler(){return fakeTest.unhandledErrorHandler || options.defaultTestErrorHandler(fakeTest)}}
 
                 options.initializeMainTest(fakeTest.mainTestState)
@@ -181,6 +182,9 @@ module.exports = function(options) {
                 fakeTest.onDone = function() { // will execute when this test is done
                     done(fakeTest)
                     options.mainTestDone(fakeTest.mainTestState)
+                }
+                fakeTest.callOnDone = function(cb) {
+                    fakeTest.onDoneCallbacks.push(cb)
                 }
 
             fakeTest.mainSubTest = UnitTester.prototype.test.apply(fakeTest, args) // set so the error handler can access the real test
@@ -301,8 +305,24 @@ module.exports = function(options) {
 
                 tester.onDone = function() { // will execute when this test is done
                     that.doneTests += 1
+
+                    that.manager.emit('groupEnd', {
+                        id: tester.id,
+                        time: now()
+                    })
+
                     checkGroupDone(that)
                 }
+
+                tester.mainTester.callOnDone(function() {
+                    if(!tester.doneCalled) { // a timeout happened - end the test
+                        tester.doneCalled = true
+                        that.manager.emit('groupEnd', {
+                            id: tester.id,
+                            time: now()
+                        })
+                    }
+                })
 
                 this.manager.emit('group', {
                     id: tester.id,
@@ -340,11 +360,6 @@ module.exports = function(options) {
                         time: now()
                     })
                 }
-
-                this.manager.emit('groupEnd', {
-                    id: tester.id,
-                    time: now()
-                })
 
                 tester.groupEnded = true
                 checkGroupDone(tester)
@@ -393,7 +408,6 @@ module.exports = function(options) {
 
             timeout: function(t) {
                 timeout(this, t, false)
-
             },
 
             error: function(handler) {
@@ -406,7 +420,7 @@ module.exports = function(options) {
             && ((group.countExpected === undefined || group.countExpected <= group.doneAsserts+group.doneTests)
                 && group.runningTests === group.doneTests)
         ) {
-            group.doneCalled = true // don't call
+            group.doneCalled = true // don't call twice
             group.onDone()
         }
 
@@ -437,7 +451,7 @@ module.exports = function(options) {
             remove(that.mainTester.timeouts, to)
 
             if(that.mainTester.timeouts.length === 0 && !that.mainTester.ended) {
-                endTest(that, 'timeout')
+                endTest(that.mainTester, 'timeout')
             }
         }, t)
 
@@ -448,16 +462,25 @@ module.exports = function(options) {
         } else if(that.mainTester.timeouts.default !== undefined) {
             clearTimeout(that.mainTester.timeouts.default)
             remove(that.mainTester.timeouts, that.mainTester.timeouts.default)
+            that.mainTester.timeouts.default = undefined
         }
 
         function remove(array, item) {
             var index = array.indexOf(item)
+            if(index === -1)
+                throw Error("Item doesn't exist to remove")
             array.splice(index, 1)
         }
     }
 
     function endTest(that, type) {
         that.mainTester.ended = true
+
+        if(that.mainTester === that) { // if its the main tester
+            that.onDoneCallbacks.forEach(function(cb) {
+                cb()
+            })
+        }
 
         that.manager.emit('end', {
             type: type,
@@ -1934,14 +1957,6 @@ module.exports = function returnResults(unitTestObject, printLateEvents) {
         },
         groupEnd: function(e) {
             setGroupDuration(e.id, e.time)
-
-            groups[e.id].totalSyncDuration = e.time - groups[e.id].time
-
-            groups[e.id].syncDuration = groups[e.id].totalSyncDuration
-            if(groups[e.id].beforeDuration !== undefined)
-                groups[e.id].syncDuration -= groups[e.id].beforeDuration
-            if(groups[e.id].afterDuration !== undefined)
-                groups[e.id].syncDuration -= groups[e.id].afterDuration
         },
         end: function(e) {
             primaryGroup.timeout = e.type === 'timeout'

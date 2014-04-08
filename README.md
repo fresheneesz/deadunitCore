@@ -123,7 +123,7 @@ UnitTest
 * `exception(<exceptionEvent>)` - called when an exception happens inside a test group.
 * `log(<logEvent>)` - called when a `log` happens.
 * `end(<endEvent>)` - called either when the `done` method is called, or when the tests time out.
-* `groupEnd(<groupEvent>)` - called when a test group executes its synchronous parts (asynchronous parts may still be active). The `time` in the Event Object is the time at which the test group synchronously ended.
+* `groupEnd(<groupEvent>)` - called when a test group is done (all expected assertions have happened and all its subtests are complete or the whole test has timed out)
 * `before(<groupEvent>)` - called when a `before` handler is started
 * `after(<groupEvent>)` - called when a `before` handler is started
 * `beforeEnd(<groupEvent>)` - called when a `before` handler is finished
@@ -208,10 +208,8 @@ UnitTest
    name: _,              // the name of the test
    results: _,           // An array of test results, which can be of an `UnitTest` Result Types
    exceptions: _,        // An array of uncaught exceptions thrown in the test,
-   duration: _,          // the duration of the test from its start til the last test action (assert, log, etc)
+   duration: _,          // the duration of the test from its start til the last test action (assert, log, timeout, etc)
    //                       including asynchronous parts and including subtests
-   syncDuration: _,      // the synchronous duration of the test (not including any asynchronous parts)
-   totalSyncDuration: _, // syncDuration plus the before and after (if applicable)
    timeout: _            // Set to true if the test times out. This key is only available on the top-level group object.
 }
 ```
@@ -287,6 +285,7 @@ How to Contribute!
 Changelog
 ========
 
+* 4.0.0 - removing syncDuration and totalSyncDuration, and making duration the total time it took for a test to complete its expected asserts
 * 3.0.3 - fixing issue where the first timeout to expire would time the test out rather than the last timeout to expire
 * 3.0.2 - get rid of late events warning in deadunit-core (thats a job for deadunit proper)
 * 3.0.1 - moving build-modules (which uses browserify) to be a devDependency

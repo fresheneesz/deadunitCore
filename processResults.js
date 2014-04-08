@@ -67,14 +67,6 @@ module.exports = function returnResults(unitTestObject, printLateEvents) {
         },
         groupEnd: function(e) {
             setGroupDuration(e.id, e.time)
-
-            groups[e.id].totalSyncDuration = e.time - groups[e.id].time
-
-            groups[e.id].syncDuration = groups[e.id].totalSyncDuration
-            if(groups[e.id].beforeDuration !== undefined)
-                groups[e.id].syncDuration -= groups[e.id].beforeDuration
-            if(groups[e.id].afterDuration !== undefined)
-                groups[e.id].syncDuration -= groups[e.id].afterDuration
         },
         end: function(e) {
             primaryGroup.timeout = e.type === 'timeout'

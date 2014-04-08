@@ -88,7 +88,7 @@ exports.getTests = function(Unit, isDone) {
         })
         //*
         this.test('Testing "Full deadunit test"', function() {
-            this.count(10)
+            this.count(9)
 
             var futuresToWaitOn = []
             var testGroups = Unit.test("Full deadunit test (results of this will be verified)", function() {
@@ -172,18 +172,15 @@ exports.getTests = function(Unit, isDone) {
                     this.ok(test.timeout === false, test.timeout)
                     this.ok(test.type === "group")
                     this.ok(test.name === "Full deadunit test (results of this will be verified)")
-                    this.ok(test.syncDuration !== undefined && test.syncDuration > 0, test.syncDuration)
                     this.ok(test.exceptions.length === 0)
                     this.ok(test.results.length === 4, test.results.length)
 
                     this.test("Verify 'Test Some Stuff'", function() {
-                        this.count(50)
+                        this.count(46)
 
                         var subtest1 = test.results[0]
                         this.ok(subtest1.type === "group")
                         this.ok(subtest1.name === "Test Some Stuff")
-                        this.ok(subtest1.syncDuration !== undefined && subtest1.syncDuration > 0 && subtest1.syncDuration < 100, subtest1.syncDuration)
-                        this.ok(subtest1.totalSyncDuration !== undefined && subtest1.totalSyncDuration >= subtest1.totalSyncDuration)  // totalDuration is the duration including before and after
                         this.ok(subtest1.exceptions.length === 0)
                         this.ok(subtest1.results.length === 7, subtest1.results.length)
 
@@ -203,7 +200,6 @@ exports.getTests = function(Unit, isDone) {
 
                         subtest2 = subtest1.results[1]
                         this.ok(subtest2.name === "'shouldFail' fails correctly", subtest2.name)
-                        this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
                         this.ok(subtest2.exceptions.length === 0)
                         this.ok(subtest2.results.length === 4, subtest2.results.length)
 
@@ -232,7 +228,6 @@ exports.getTests = function(Unit, isDone) {
 
                         subtest2 = subtest1.results[2]
                         this.ok(subtest2.name === "shouldThrowException")
-                        this.ok(subtest2.syncDuration !== undefined && subtest2.syncDuration >= 0 && subtest2.syncDuration < 10, subtest2.syncDuration)
                         this.ok(subtest2.exceptions.length === 1)
                         this.ok(subtest2.exceptions[0].message === "Ahhhhh!")
                         this.ok(subtest2.results.length === 2, subtest2.results.length)
@@ -352,27 +347,25 @@ exports.getTests = function(Unit, isDone) {
                 })
             })
 
-            t.count(9)
+            t.count(7)
             moreFutures.push(f3)
 
             Future.all([f1,f2]).then(function() {
                 var results = test.results()
 
                 t.ok(results.timeout === false, results.timeout)
-                t.ok(results.syncDuration < 50, results.syncDuration)
                 t.ok(results.duration >= 200, results.duration)
                 t.ok(results.results.length === 3, results.results.length)
                 t.ok(results.results[0].results.length === 2)
                 t.ok(results.results[0].results[0].success === true)
-                t.ok(results.results[0].syncDuration < 50, results.results[0].syncDuration)
                 t.ok(results.results[0].duration >= 200, require('util').inspect(results.results[0]))
                 t.ok(results.results[1].success === true)
 
             }).catch(function(e) {
-                    t.ok(false, e)
-                }).finally(function() {
-                    f3.return()
-                }).done()
+                t.ok(false, e)
+            }).finally(function() {
+                f3.return()
+            }).done()
         })
 
         function testCounts(t, test) {
@@ -443,6 +436,21 @@ exports.getTests = function(Unit, isDone) {
                 }).catch(function(e) {
                     tester.ok(false, e)
                 }).done()
+        })
+
+        this.test("timeouts", function(t) {
+            this.count(1)
+
+            var test = Unit.test(function(t) {
+                this.timeout(500)
+                this.test(function() {
+                    this.count(1) // to make it timeout
+                    this.timeout(50)
+                })
+            }).events({end: function() {
+                var results = test.results()
+                t.ok(results.duration >= 500, results.duration)
+            }})
         })
 
         /* Unit.error is deprecated
