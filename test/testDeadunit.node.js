@@ -13,6 +13,29 @@ var mainTest = OldDeadunit.test(tests.name, function() {
         this.count(1)
         this.timeout(3000)
 
+
+        this.test("former bugs", function() {
+            this.test("multiple timeouts not working correctly ", function(t) {
+                this.count(1)
+
+                var test = Unit.test(function(t) {
+                    this.count(1) // so it times out
+                    this.timeout(100)
+                    this.test(function() {
+                        this.count(1) // so it times out
+                        this.timeout(100)
+                    })
+                    this.test(function() {
+                        this.count(1) // so it times out
+                        this.timeout(100)
+                    })
+                }).events({end: function() {
+                    var results = test.results()
+                    t.ok(results.timeout === true)
+                }})
+            })
+        })
+         /*
         // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
         // which causes the program to exit in what should be the middle of a continuation
         // this test is about making sure that you can at least see the results that were collected within that incomplete test
@@ -98,7 +121,7 @@ var mainTest = OldDeadunit.test(tests.name, function() {
         */
     })
 
-    this.test('common tests', tests.getTests(Unit, isDone))
+    //this.test('common tests', tests.getTests(Unit, isDone))
 
 })
 

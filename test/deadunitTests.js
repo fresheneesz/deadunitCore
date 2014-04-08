@@ -402,9 +402,7 @@ exports.getTests = function(Unit, isDone) {
                     this.ok(true)
                 })
                 this.ok(true)
-            })
-
-            test.events({end: function() {
+            }).events({end: function() {
                 testCounts(t, test)
             }})
         })
@@ -445,6 +443,26 @@ exports.getTests = function(Unit, isDone) {
                 }).catch(function(e) {
                     tester.ok(false, e)
                 }).done()
+        })
+
+        this.test("former bugs", function() {
+            this.test("multiple timeouts not working correctly ", function(t) {
+                this.count(1)
+
+                var test = Unit.test(function(t) {
+                    this.test(function() {
+                        this.count(1)
+                        this.timeout(100)
+                    })
+                    this.test(function() {
+                        this.count(1) // so it times out
+                        this.timeout(200)
+                    })
+                }).events({end: function() {
+                    var results = test.results()
+                    t.ok(results.timeout === true)
+                }})
+            })
         })
 
         /* Unit.error is deprecated
