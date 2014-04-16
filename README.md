@@ -218,7 +218,7 @@ UnitTest
    type: 'assert',   // indicates an assert (either an `ok` or `count` call)
    success: _,       // true or false, whether the assert passed or failed
    time: _,			 // a Unix Timestamp of the time when the assert happened
-   sourceLines: _,   // the text of the actual line of code for the assert
+   sourceLines: _,   // the text of the actual line of code for the assert (Note that sourceLines are only available if the script is allowed to download the source, which might not be the case if the source is from your filesystem [ie file://] or from another domain)
    file: _,          // the filename of the file containing the test
    line: _,          // line number of the assert
    column: _,        // column number of the assert (not sure this is totally accurate)
@@ -283,6 +283,7 @@ How to Contribute!
 Changelog
 ========
 
+* 4.0.2 - Fixing it so things don't break if you can't get a file's source
 * 4.0.1 - Added getting source lines for tests in-browser
 * 4.0.0 - removing syncDuration and totalSyncDuration, and making duration the total time it took for a test to complete its expected asserts
 * 3.0.3 - fixing issue where the first timeout to expire would time the test out rather than the last timeout to expire

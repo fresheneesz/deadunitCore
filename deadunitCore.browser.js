@@ -62,43 +62,53 @@ function load(url) {
         return loadCache[url]
 
     var result = new Future
-    loadCache[url] = result
-    var httpReq
+    try {
+        loadCache[url] = result.catch(function(e) {
+            // ignore the error
+            return undefined // pass on undefined to indicate that the file couldn't be downloaded
+        })
 
-    var versions = ["MSXML2.XmlHttp.5.0",
-                    "MSXML2.XmlHttp.4.0",
-                    "MSXML2.XmlHttp.3.0",
-                    "MSXML2.XmlHttp.2.0",
-                    "Microsoft.XmlHttp"];
+        var httpReq
+        var versions = ["MSXML2.XmlHttp.5.0",
+                        "MSXML2.XmlHttp.4.0",
+                        "MSXML2.XmlHttp.3.0",
+                        "MSXML2.XmlHttp.2.0",
+                        "Microsoft.XmlHttp"];
 
-    if(window.XMLHttpRequest) {
-        //    For Mozilla, Safari (non IE browsers)
-        httpReq = new XMLHttpRequest();
-    } else if( window.ActiveXObject ) {
-        //    For IE browsers
-        for(var i = 0, n=versions.length; i < n; i++ ) {
-            try {
-                httpReq = new ActiveXObject(versions[i]);
-            } catch(e) {   }
-        }
-    }
-
-    if (!httpReq) {
-        throw new Error('Cannot create an XMLHTTP instance')
-    }
-
-    httpReq.onreadystatechange = function() {
-        if( httpReq.readyState === 4 ) {
-            if( httpReq.status === 200 ) {
-                result.return(httpReq.responseText)
-            } else {
-                throw new Error('Error in request')
+        if(window.XMLHttpRequest) {
+            //    For Mozilla, Safari (non IE browsers)
+            httpReq = new XMLHttpRequest();
+        } else if( window.ActiveXObject ) {
+            //    For IE browsers
+            for(var i = 0, n=versions.length; i < n; i++ ) {
+                try {
+                    httpReq = new ActiveXObject(versions[i]);
+                } catch(e) {   }
             }
         }
-    };
 
-    httpReq.open('GET', url);
-    httpReq.send();
+        if (!httpReq) {
+            throw new Error('Cannot create an XMLHTTP instance')
+        }
 
-    return result
+        httpReq.onreadystatechange = function() {
+            if( httpReq.readyState === 4 ) {
+                if( httpReq.status === 200 ) {
+                    result.return(httpReq.responseText)
+                } else {
+                    if(!result.isResolved)
+                        result.throw(new Error('Error in request'))
+                }
+            }
+        };
+
+        httpReq.open('GET', url);
+        httpReq.send();
+
+    } catch(e) {
+        if(!result.isResolved)
+            result.throw(e)
+    }
+
+    return loadCache[url]
 }
