@@ -276,6 +276,7 @@ How to Contribute!
 6. If it's a code change, please add to the unit tests (at test/testDeadunitCore.js) to verify that your change
 7. When you're done, run the unit tests and ensure they all pass
   * Make sure you run `node build.js` to build the browser packages (browserPackage/deadunitCore.browser.gen.umd.js and test/deadunitTests.browser.umd.js) before running the browser tests
+  * For a full test, also run testServer.js and access the browser tests by going to http://localhost:8000/
 8. Commit and push your changes
 9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
 
