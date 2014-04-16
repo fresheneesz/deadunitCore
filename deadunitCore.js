@@ -70,7 +70,6 @@ module.exports = function(options) {
             var fakeTest = new UnitTester()
                 fakeTest.id = undefined // fake test doesn't get an id
                 fakeTest.manager = this.manager
-                fakeTest.mainTester.timeoutCount = 0
                 fakeTest.timeouts = []
                 fakeTest.onDoneCallbacks = []
                 fakeTest.mainTestState = {get unhandledErrorHandler(){return fakeTest.unhandledErrorHandler || options.defaultTestErrorHandler(fakeTest)}}
@@ -182,6 +181,7 @@ module.exports = function(options) {
         this.doneTests = 0
         this.doneAsserts = 0
         this.runningTests = 0 // the number of subtests created synchronously
+        this.waitingAsserts = 0 // since asserting is asynchronous, need to make sure they complete before the test can be declared finished
         this.doneCalled = false
     }
 
@@ -268,20 +268,30 @@ module.exports = function(options) {
 
             ok: function(success, actualValue, expectedValue) {
                 this.doneAsserts += 1
-                assert(this, success, actualValue, expectedValue, 'assert', "ok")
-                checkGroupDone(this)
+                assert(this, success, actualValue, expectedValue, 'assert', "ok").then(function() {
+                    this.waitingAsserts --
+                    this.mainTester.waitingAsserts --
+                    checkGroupDone(this)
+                }.bind(this)).done()
             },
             equal: function(expectedValue, testValue) {
                 this.doneAsserts += 1
-                assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal")
-                checkGroupDone(this)
+                assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal").then(function() {
+                    this.waitingAsserts --
+                    this.mainTester.waitingAsserts --
+                    checkGroupDone(this)
+                }.bind(this)).done()
             },
             count: function(number) {
                 if(this.countExpected !== undefined)
                     throw Error("count called multiple times for this test")
                 this.countExpected = number
 
-                assert(this, undefined, undefined, number, 'count', "count")
+                assert(this, undefined, undefined, number, 'count', "count").then(function() {
+                    this.waitingAsserts --
+                    this.mainTester.waitingAsserts --
+                    checkGroupDone(this)
+                }.bind(this)).done()
             },
 
             before: function(fn) {
@@ -315,7 +325,7 @@ module.exports = function(options) {
         }
 
     function checkGroupDone(group) {
-        if(!group.doneCalled && group.groupEnded === true
+        if(!group.doneCalled && group.groupEnded === true && group.waitingAsserts === 0
             && ((group.countExpected === undefined || group.countExpected <= group.doneAsserts+group.doneTests)
                 && group.runningTests === group.doneTests)
         ) {
@@ -344,13 +354,22 @@ module.exports = function(options) {
 
     // if a timeout is the default, it can be overridden
     function timeout(that, t, theDefault) {
-        that.mainTester.timeoutCount++
-
         var to = setTimeout(function() {
             remove(that.mainTester.timeouts, to)
 
             if(that.mainTester.timeouts.length === 0 && !that.mainTester.ended) {
-                endTest(that.mainTester, 'timeout')
+                that.mainTester.timingOut = true
+                checkIfTestIsReadyToEnd()
+            }
+
+            function checkIfTestIsReadyToEnd() {
+                setTimeout(function() {
+                    if(that.mainTester.waitingAsserts <= 0) {
+                        endTest(that.mainTester, 'timeout')
+                    } else {
+                        checkIfTestIsReadyToEnd()
+                    }
+                },10)
             }
         }, t)
 
@@ -390,56 +409,67 @@ module.exports = function(options) {
     function assert(that, success, actualValue, expectedValue, type, functionName/*="ok"*/, lineInfo/*=dynamic*/, stackIncrease/*=0*/) {
         if(!stackIncrease) stackIncrease = 1
         if(!functionName) functionName = "ok"
-        if(!lineInfo) lineInfo = getLineInformation(functionName, stackIncrease)
+        if(!lineInfo)
+            var lineInfoFuture = getLineInformation(functionName, stackIncrease)
+        else
+            var lineInfoFuture = Future(lineInfo)
 
-        var result = lineInfo
-        result.type = 'assert'
-        result.success = success
+        that.waitingAsserts += 1
+        if(!that.mainTester.timingOut) {
+            that.mainTester.waitingAsserts += 1
+        }
 
-        if(actualValue !== undefined)     result.actual = actualValue
-        if(expectedValue !== undefined)   result.expected = expectedValue
+        return lineInfoFuture.then(function(lineInfo) {
+            var result = lineInfo
+            result.type = 'assert'
+            result.success = success
 
-        result.parent = that.id
-        result.time = now()
+            if(actualValue !== undefined)     result.actual = actualValue
+            if(expectedValue !== undefined)   result.expected = expectedValue
 
-        that.manager.emit(type, result)
+            result.parent = that.id
+            result.time = now()
+
+            that.manager.emit(type, result)
+        })
     }
 
 
     function getLineInformation(functionName, stackIncrease) {
         var info = options.getLineInfo(stackIncrease)
-        var sourceLines = getFunctionCallLines(info.file, functionName, info.line)
-
-        return {
-            sourceLines: sourceLines,
-            file: path.basename(info.file),
-            line: info.line,
-            column: info.column
-        }
+        return getFunctionCallLines(info.file, functionName, info.line).then(function(sourceLines) {
+            return Future({
+                sourceLines: sourceLines,
+                file: path.basename(info.file),
+                line: info.line,
+                column: info.column
+            })
+        })
     }
 
     // gets the actual lines of the call
     // todo: make this work when call is over multiple lines (you would need to count parens and check for quotations)
     function getFunctionCallLines(fileName, functionName, lineNumber) {
-        var file = options.getScriptSource(fileName)
+        return options.getScriptSource(fileName).then(function(file) {
 
-        if(file !== undefined) {
-            var fileLines = file.split("\n")
+            if(file !== undefined) {
+                var fileLines = file.split("\n")
 
-            var lines = []
-            for(var n=0; true; n++) {
-                lines.push(fileLines[lineNumber - 1 - n].trim())
-                var containsFunction = fileLines[lineNumber - 1 - n].indexOf(functionName) !== -1
-                if(containsFunction) {
-                    return lines.reverse().join('\n')
+                var lines = []
+                for(var n=0; true; n++) {
+                    lines.push(fileLines[lineNumber - 1 - n].trim())
+                    var containsFunction = fileLines[lineNumber - 1 - n].indexOf(functionName) !== -1
+                    if(containsFunction) {
+                        return Future(lines.reverse().join('\n'))
+                    }
+                    if(lineNumber - n < 0) {
+                        return Future("<no lines found (possibly an error?)> ")	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
+                    }
                 }
-                if(lineNumber - n < 0) {
-                    return "<no lines found (possibly an error?)> "	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
-                }
+            } else {
+                return Future("<source not available>")
             }
-        } else {
-            return "<source not available>"
-        }
+        })
     }
 
     function groupid() {

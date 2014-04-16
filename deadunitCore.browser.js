@@ -28,7 +28,7 @@ module.exports = deadunitCore({
         runTest()
     },
     getScriptSource: function(path) {
-        return undefined //load(path)
+        return load(path)
     },
 
     defaultUnhandledErrorHandler: function(e) {
@@ -56,8 +56,13 @@ module.exports = deadunitCore({
 })
 
 
+var loadCache = {}
 function load(url) {
+    if(loadCache[url] !== undefined)
+        return loadCache[url]
+
     var result = new Future
+    loadCache[url] = result
     var httpReq
 
     var versions = ["MSXML2.XmlHttp.5.0",

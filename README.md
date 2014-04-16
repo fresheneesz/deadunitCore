@@ -1,5 +1,3 @@
-**Status**: API finalized, needs testing
-
 `deadunitCore`
 ============
 
@@ -251,7 +249,6 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
-* Add getting source lines for tests in browser
 * There's already a way to work around dead fibers, but still need to make a way to work around dead futures
   * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
     * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)
@@ -285,6 +282,7 @@ How to Contribute!
 Changelog
 ========
 
+* 4.0.1 - Added getting source lines for tests in-browser
 * 4.0.0 - removing syncDuration and totalSyncDuration, and making duration the total time it took for a test to complete its expected asserts
 * 3.0.3 - fixing issue where the first timeout to expire would time the test out rather than the last timeout to expire
 * 3.0.2 - get rid of late events warning in deadunit-core (thats a job for deadunit proper)

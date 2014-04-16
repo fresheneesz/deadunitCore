@@ -8,7 +8,6 @@ var tests = require("./deadunitTests")
 
 var isDone = new Future
 var mainTest = OldDeadunit.test(tests.name, function() {
-    this.timeout(1000)
 
 
 
@@ -30,7 +29,9 @@ var mainTest = OldDeadunit.test(tests.name, function() {
             var ff = new FibersFuture
 
             var test = Unit.test(function() {
+                this.count(2) // timeout
                 this.timeout(100) // timeout faster
+
                 setTimeout(function() {
                     Fiber(function() {
                         f.return()
@@ -55,10 +56,10 @@ var mainTest = OldDeadunit.test(tests.name, function() {
                 Future.all([f,f2]).then(function() {
                     var results = test.results()
 
-                    t.ok(results.results.length === 2, results.results.length)
+                    t.ok(results.results.length === 3, results.results.length)
 
                     t.ok(results.results[0].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
-                    t.ok(results.results[0].results.length === 1)
+                    t.ok(results.results[0].results.length === 1, results.results[0].results.length)
                     t.ok(results.results[0].results[0].success === true)
                     t.ok(results.results[0].duration !== undefined, results.results[0].duration)
                     t.ok(results.results[0].duration >= 0, results.results[0].duration)

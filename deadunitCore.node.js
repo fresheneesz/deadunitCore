@@ -5,6 +5,7 @@ var domain = require('domain').create
 var fs = require('fs')
 
 var stackTrace = require('stack-trace')
+var Future = require('async-future')
 
 var deadunitCore = require("./deadunitCore")
 
@@ -49,7 +50,7 @@ module.exports = deadunitCore({
         }
     },
     getScriptSource: function(path) {
-        return fs.readFileSync(path).toString()
+        return Future(fs.readFileSync(path).toString())
     },
 
     defaultUnhandledErrorHandler: defaultUnhandledErrorHandler,

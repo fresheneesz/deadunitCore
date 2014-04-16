@@ -1,13 +1,13 @@
 <body>
 </body>
-<script src='../node_modules/requirejs/require.js'></script>
+<script src='node_modules/requirejs/require.js'></script>
 <script>
     "use strict";
 
     require.config({
         paths: {
-            "deadunitCore": "../browserPackage/deadunitCore.browser.gen.umd",
-            "deadunitTests": "deadunitTests.browser.umd"
+            "deadunitCore": "browserPackage/deadunitCore.browser.gen.umd",
+            "deadunitTests": "test/deadunitTests.browser.umd"
         }
     })
 
