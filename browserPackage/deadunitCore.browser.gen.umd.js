@@ -175,9 +175,8 @@ module.exports = function(options) {
             return this
         }
 
-        this.results = function(printLateEvents) {
-            if(printLateEvents === undefined) printLateEvents = true
-            return processResults(this, printLateEvents)
+        this.results = function() {
+            return processResults(this)
         }
 
         // private
@@ -572,9 +571,14 @@ module.exports = function(options) {
                 var fileLines = file.split("\n")
 
                 var lines = []
-                for(var n=0; true; n++) {
-                    lines.push(fileLines[lineNumber - 1 - n].trim())
-                    var containsFunction = fileLines[lineNumber - 1 - n].indexOf(functionName) !== -1
+                for(var n=0; n<true; n++) {
+                    var line = fileLines[lineNumber - 1 - n]
+                    if(line === undefined) {
+                        break;
+                    }
+
+                    lines.push(line.trim())
+                    var containsFunction = line.indexOf(functionName) !== -1
                     if(containsFunction) {
                         return Future(lines.reverse().join('\n'))
                     }
@@ -582,9 +586,9 @@ module.exports = function(options) {
                         return Future("<no lines found (possibly an error?)> ")	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
                     }
                 }
-            } else {
-                return Future("<source not available>")
             }
+            // else
+            return Future("<source not available>")
         })
     }
 
@@ -1842,10 +1846,10 @@ module.exports = {
     chrome: function(line) {
         var m = line.match(CHROME_STACK_LINE);
         if (m) {
-            var file = m[8] || m[15] || m[22]
-            var fn = m[4] || m[7] || m[12] || m[19]
-            var lineNumber = m[10] || m[17]
-            var column = m[11] || m[18]
+            var file = m[9] || m[17] || m[24]
+            var fn = m[4] || m[7] || m[13] || m[21]
+            var lineNumber = m[11] || m[19]
+            var column = m[12] || m[20]
         } else {
             //throw new Error("Couldn't parse exception line: "+line)
         }
@@ -1891,7 +1895,7 @@ module.exports = {
     }
 }
 
-
+"Object.module.exports.test.TabBar.buttons.callback [as click] (http://localhost:8001/git/frontend/test/allTestsFE.bundle.js:1546:9)"
 
 // The following 2 regex patterns were originally taken from google closure library: https://code.google.com/p/closure-library/source/browse/closure/goog/testing/stacktrace.js
 // RegExp pattern for JavaScript identifiers. We don't support Unicode identifiers defined in ECMAScript v3.
@@ -1905,7 +1909,7 @@ var CHROME_STACKTRACE_JS_GETSOURCE_FAILURE = STACKTRACE_JS_GETSOURCE_FAILURE+'((
 
 var CHROME_FILE_AND_LINE = URL_PATTERN_+'(:(\\d*):(\\d*))'
 var CHROME_IDENTIFIER_PATTERN = '\\<?'+IDENTIFIER_PATTERN_+'\\>?'
-var CHROME_COMPOUND_IDENTIFIER = "((new )?"+CHROME_IDENTIFIER_PATTERN+'(\\.'+CHROME_IDENTIFIER_PATTERN+')*)'
+var CHROME_COMPOUND_IDENTIFIER = "((new )?"+CHROME_IDENTIFIER_PATTERN+'(\\.'+CHROME_IDENTIFIER_PATTERN+')*)( \\[as '+IDENTIFIER_PATTERN_+'])?'
 var CHROME_UNKNOWN_IDENTIFIER = "(\\(\\?\\))"
 
 // output from stacktrace.js is: "name()@..." instead of "name (...)"
@@ -1933,7 +1937,7 @@ var IE_NORMAL_FUNCTION = '('+IDENTIFIER_PATTERN_+')@'+IE_FILE_AND_LINE
 var IE_FUNCTION_CALL = '('+IE_NORMAL_FUNCTION+'|'+IE_ANONYMOUS+')'+IE_WHITESPACE+'*'
 var IE_STACK_LINE = new RegExp('^'+IE_FUNCTION_CALL+'$')
 },{}],12:[function(_dereq_,module,exports){
-module.exports = function returnResults(unitTestObject, printLateEvents) {
+module.exports = function returnResults(unitTestObject) {
 
     var results;
     var groups = {}

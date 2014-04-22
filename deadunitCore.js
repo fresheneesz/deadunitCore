@@ -455,9 +455,14 @@ module.exports = function(options) {
                 var fileLines = file.split("\n")
 
                 var lines = []
-                for(var n=0; n<fileLines.length; n++) {
-                    lines.push(fileLines[lineNumber - 1 - n].trim())
-                    var containsFunction = fileLines[lineNumber - 1 - n].indexOf(functionName) !== -1
+                for(var n=0; n<true; n++) {
+                    var line = fileLines[lineNumber - 1 - n]
+                    if(line === undefined) {
+                        break;
+                    }
+
+                    lines.push(line.trim())
+                    var containsFunction = line.indexOf(functionName) !== -1
                     if(containsFunction) {
                         return Future(lines.reverse().join('\n'))
                     }
