@@ -594,7 +594,7 @@ exports.getTests = function(Unit, isDone) {
                     count: function(e) {
                         countSequence(function() {
                             t.ok(e.success === undefined)
-                            t.ok(e.sourceLines === 'this.count(1)')
+                            t.ok(e.sourceLines === 'this.count(1)', e.sourceLines)
                         })
                     },
                     log: function(e) {

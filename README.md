@@ -65,15 +65,20 @@ npm install deadunit-core
 
 Usage
 =====
+##### node.js or [webpack](https://github.com/webpack/webpack)
 ```javascript
-var Unit = require('deadunit-core') // node.js
+var Unit = require('deadunit-core')
+```
 
-// require js
+##### require.js
+```javascript
 require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(Unit) {
    // ...
 }
+```
 
-// browser global (the global variable will be 'deaunitCore')
+##### browser global (the global variable will be 'deaunitCore')
+```javascript
 <script src='node_modules/browserPackage/deadunitCore.browser.gen.umd'></script>
 ```
 
@@ -276,13 +281,16 @@ How to Contribute!
 6. If it's a code change, please add to the unit tests (at test/testDeadunitCore.js) to verify that your change
 7. When you're done, run the unit tests and ensure they all pass
   * Make sure you run `node build.js` to build the browser packages (browserPackage/deadunitCore.browser.gen.umd.js and test/deadunitTests.browser.umd.js) before running the browser tests
-  * For a full test, also run testServer.js and access the browser tests by going to http://localhost:8000/
+  * For a full test, run testServer.js and access the browser tests by going to http://localhost:8000/
+    * Also run the tests from the filesystem to ensure that works as well (ie file:// instead of using the testServer)
 8. Commit and push your changes
 9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
 
 Changelog
 ========
-
+* 4.0.3
+ * updating stackinfo
+ * fixing bug in sourcetext loading in browser code that happened when sourcecode returns blank (the blankness might be a bug itself, or might be a browser issue)
 * 4.0.2 - Fixing it so things don't break if you can't get a file's source
 * 4.0.1 - Added getting source lines for tests in-browser
 * 4.0.0 - removing syncDuration and totalSyncDuration, and making duration the total time it took for a test to complete its expected asserts

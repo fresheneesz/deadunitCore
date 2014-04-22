@@ -59,9 +59,8 @@ module.exports = function(options) {
             return this
         }
 
-        this.results = function(printLateEvents) {
-            if(printLateEvents === undefined) printLateEvents = true
-            return processResults(this, printLateEvents)
+        this.results = function() {
+            return processResults(this)
         }
 
         // private
@@ -456,7 +455,7 @@ module.exports = function(options) {
                 var fileLines = file.split("\n")
 
                 var lines = []
-                for(var n=0; true; n++) {
+                for(var n=0; n<fileLines.length; n++) {
                     lines.push(fileLines[lineNumber - 1 - n].trim())
                     var containsFunction = fileLines[lineNumber - 1 - n].indexOf(functionName) !== -1
                     if(containsFunction) {
@@ -466,9 +465,9 @@ module.exports = function(options) {
                         return Future("<no lines found (possibly an error?)> ")	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
                     }
                 }
-            } else {
-                return Future("<source not available>")
             }
+            // else
+            return Future("<source not available>")
         })
     }
 

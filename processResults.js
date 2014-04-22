@@ -1,4 +1,4 @@
-module.exports = function returnResults(unitTestObject, printLateEvents) {
+module.exports = function returnResults(unitTestObject) {
 
     var results;
     var groups = {}
