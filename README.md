@@ -288,6 +288,7 @@ How to Contribute!
 
 Changelog
 ========
+* 4.0.5 - Fixing bug where deadunit would crash if an asynchronous error was thrown from the main test
 * 4.0.3
  * updating stackinfo
  * fixing bug in sourcetext loading in browser code that happened when sourcecode returns blank (the blankness might be a bug itself, or might be a browser issue)

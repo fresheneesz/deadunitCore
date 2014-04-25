@@ -9,7 +9,9 @@ exports.getTests = function(Unit, isDone) {
 
     return function() {
 
-
+        setTimeout(function() {
+            throw Error("Don't break!")  // tests a former bug where deadunit would crash if an asynchronous error like this was thrown in the top-level main test
+        }, 0)
 
         //*
         this.test('simple success', function(t) {

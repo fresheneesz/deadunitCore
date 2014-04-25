@@ -84,7 +84,7 @@ module.exports = function(options) {
                     fakeTest.onDoneCallbacks.push(cb)
                 }
 
-            fakeTest.mainSubTest = UnitTester.prototype.test.apply(fakeTest, args) // set so the error handler can access the real test
+            UnitTester.prototype.test.apply(fakeTest, args) // set so the error handler can access the real test
             this.mainTester = fakeTest
 
             fakeTest.groupEnded = true
@@ -200,6 +200,10 @@ module.exports = function(options) {
 
                 var tester = new UnitTester(name, this.mainTester)
                 tester.manager = this.manager
+
+                if(this.id === undefined) { // ie its the top-level fake test
+                    this.mainSubTest = tester
+                }
 
                 tester.onDone = function() { // will execute when this test is done
                     that.doneTests += 1
