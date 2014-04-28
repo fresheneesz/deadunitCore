@@ -288,6 +288,7 @@ How to Contribute!
 
 Changelog
 ========
+* 4.0.6 - updating stackinfo
 * 4.0.5 - Fixing bug where deadunit would crash if an asynchronous error was thrown from the main test
 * 4.0.3
  * updating stackinfo

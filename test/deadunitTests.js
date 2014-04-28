@@ -9,10 +9,6 @@ exports.getTests = function(Unit, isDone) {
 
     return function() {
 
-        setTimeout(function() {
-            throw Error("Don't break!")  // tests a former bug where deadunit would crash if an asynchronous error like this was thrown in the top-level main test
-        }, 0)
-
         //*
         this.test('simple success', function(t) {
             this.count(3)
@@ -204,7 +200,7 @@ exports.getTests = function(Unit, isDone) {
                                 this.ok(subtest3.success === true)
                                 this.ok(subtest3.sourceLines.indexOf("5 === 5") !== -1)
                                 this.ok(subtest3.file === "deadunitTests.js")
-                                this.ok(subtest3.line === 105, subtest3.line)
+                                this.ok(subtest3.line === 103, subtest3.line)
                                 //this.ok(subtest3.column === 9, subtest3.column)
 
                             subtest2 = subtest1.results[1]
@@ -228,7 +224,7 @@ exports.getTests = function(Unit, isDone) {
                                 this.ok(subtest3.success === false)
                                 this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
                                 this.ok(subtest3.file === "deadunitTests.js")
-                                this.ok(subtest3.line === 109, subtest3.line)
+                                this.ok(subtest3.line === 107, subtest3.line)
                                 //this.ok(subtest3.column === 9, subtest3.column)
 
                                 subtest3 = subtest2.results[3]      // count
@@ -648,6 +644,27 @@ exports.getTests = function(Unit, isDone) {
                         }
                     })
                 }
+            })
+        })
+
+        this.test('former bugs', function() {
+            this.test('deadunit would crash if an asynchronous error was thrown in the top-level main test', function(t) {
+                var unittest = Unit.test(function() {
+                    this.count(1)
+                    this.timeout(100)
+                    setTimeout(function() {
+                        throw Error("Don't break!")  // tests a former bug where
+                    }, 0)
+                })
+                unittest.events({
+                    end: function(e) {
+                        var results = unittest.results()
+                        t.ok(results.exceptions.length === 1, results.exceptions.length)
+                        t.ok(results.exceptions[0].message === "Don't break!")
+                    }
+                })
+
+
             })
         })
         //*/
