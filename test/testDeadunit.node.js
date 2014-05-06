@@ -6,15 +6,17 @@ var Future = require('async-future')
 
 var tests = require("./deadunitTests")
 
-var isDone = new Future
-var mainTest = OldDeadunit.test(tests.name, function() {
+// these two are required for the 'sourcemap' test, but need to be here because the files can't be built into the bundle (or the sourcemap comment will eff things up)
+require('./inlineSourceMapTest.browserified.umd')
+require('./sourceMapTest.js') // it needs to be global in the browser context so its sourcemap doesn't conflict inside the bundle
+
+var mainTest = OldDeadunit.test(tests.name, function(t) {
 
 
 
+    //*
     this.test('node-specific tests', function() {
         this.count(1)
-
-         //*
 
         // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
         // which causes the program to exit in what should be the middle of a continuation
@@ -70,52 +72,31 @@ var mainTest = OldDeadunit.test(tests.name, function() {
                     t.ok(results.results[1].duration >= 0, results.results[1].duration)
                 }).done()
             }})
-
-
         })
 
-        /* This test is no longer correct, but I don't know how to test it anymore since the original cause of the exception isn't reproducible now
-        this.test('error hiding when internal exception is thrown', function(t) {
-            this.count(2)
-            var Fiber = require('fibers')
-            var FibersFuture = require('fibers/future')
 
-            var test = Unit.test(function(t) {
-                Fiber(function() {
-                    t.count(1) // to make it timeout
-                    t.timeout(0)
-                    var f = new FibersFuture
-                    setTimeout(function() {
-                        f.return()
-                    },100)
-                    f.wait()
-                }).run()
-            }).events({
-                end: function() {
-                    var results = test.results()
-                    var exceptions = results.exceptions
-                    t.ok(results.timeout === true, results.timeout)
-                    t.ok(exceptions.length === 1, exceptions.length)
-                    t.ok(exceptions[0].message === "done called more than once (probably because the test timed out before it finished)", exceptions[0].message)
-                }
-            })
-        })
-        */
 
     })
 
-    this.test('common tests', tests.getTests(Unit, isDone))
+
+    this.test('common tests', tests.getTests(Unit, 'node'))
+
+    //*/
 
 
-})
-
-var to = setTimeout(function() {
-    mainTest.writeConsole()
-    console.log('Had to time out the test')
-},4000)
+}).writeConsole(500)
 
 
-isDone.then(function() {
-    mainTest.writeConsole(500)
-    clearTimeout(to)
-}).done()
+
+// returns a function that calls a different function every time
+// when it runs out of functions, it errors
+function sequence() {
+    var n = 0
+    return function() {
+        var fns = arguments
+        n++
+        if(n-1 >= fns.length) throw Error("Unexpected call "+n)
+        fns[n-1]()
+
+    }
+}

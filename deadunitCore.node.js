@@ -3,34 +3,59 @@
 
 var domain = require('domain').create
 var fs = require('fs')
+var path = require("path")
 
 var stackTrace = require('stack-trace')
 var Future = require('async-future')
+var resolveSourceMap = Future.wrap(require('source-map-resolve').resolveSourceMap)
+var color = require('colors/safe')
 
 var deadunitCore = require("./deadunitCore")
+
+var nodeReadFile = Future.wrap(fs.readFile)
+var readFile = function(filePath) {
+    return nodeReadFile(filePath).then(function(fileBuffer) {
+        return Future(fileBuffer.toString())
+    })
+}
+var exists = function(filePath) {
+    var existsFuture = new Future
+    fs.exists(filePath, function(exists) {
+        existsFuture.return(exists)
+    })
+    return existsFuture
+}
 
 module.exports = deadunitCore({
     initialize: function() {},
     initializeMainTest: function() {},
     mainTestDone: function() {},
 
+    getDomain: function() {
+        return process.domain
+    },
+
     runTestGroup: function(deadunitState, tester, runTest, handleError) {
 
         var d = domain()
         d.on('error', function(err) {
             try {
-                handleError(err)
+                handleError(err, true).then(function() {
+                    if(tester.mainTester.resultsAccessed) {
+                        if(err instanceof Error) {
+                            var errorToShow = err.stack
+                        } else {
+                            var errorToShow = err
+                        }
 
-                if(tester.mainTester.resultsAccessed) {
-                    if(err instanceof Error) {
-                        var errorToShow = err.stack
-                    } else {
-                        var errorToShow = err
+                        handleUnhandledError(tester, Error("Test results were accessed before asynchronous parts of tests were fully complete."
+                                                     +" Got error: "+errorToShow ))
                     }
+                }).catch(function(e) {
+                    handleUnhandledError(tester, Error("Deadunit threw up : ( - "+e.stack ))
+                    console.log(e.stack)
+                }).done()
 
-                    handleUnhandledError(tester, Error("Test results were accessed before asynchronous parts of tests were fully complete."
-                                                 +" Got error: "+errorToShow ))
-                }
             } catch(e) {
                handleUnhandledError(tester, Error("Deadunit threw up : ( - "+e.stack ))
                console.log(e.stack)
@@ -49,8 +74,57 @@ module.exports = deadunitCore({
                 deadunitState.unhandledErrorHandler(e)
         }
     },
-    getScriptSource: function(path) {
-        return Future(fs.readFileSync(path).toString())
+
+    getScriptSourceLines: function(filePath) {
+        return exists(filePath).then(function(exists) {
+            if(exists) {
+                return readFile(filePath).then(function(fileContents) {
+                    return Future(fileContents.split('\n'))
+                })
+            } else {
+                return Future(undefined)
+            }
+        })
+    },
+
+    getSourceMapObject: function(filePath, warningHandler) {
+        return exists(filePath).then(function(fileExists) {
+            if(fileExists) {
+                return readFile(filePath).then(function(fileContents) {
+                    return resolveSourceMap(fileContents.toString(), filePath, fs.readFile).catch(function(e){
+                        warningHandler(e)
+                        return Future(undefined)
+
+                    }).then(function(sourceMapObject) {
+                        if(sourceMapObject !== null) {
+                            return Future(sourceMapObject.map)
+                        } else {
+                            return Future(undefined)
+                        }
+
+                        /*if(sourceMapFileName !== null) {
+
+                            var sourceMapPath = path.join(path.dirname(filePath), sourceMapFileName)
+
+                            return exists(sourceMapPath).then(function(fileExists) {
+                                if(fileExists) {
+                                    return readFile(sourceMapPath)
+                                } else if(sourceMapFileName.indexOf('data:') === 0) {
+                                    return Future(decodeDataUrl(sourceMapFileName))
+                                } else {
+                                    warningHandler(new Error("Couldn't find sourcemap file: "+sourceMapFileName))
+                                    return Future(undefined)
+                                }
+                            })
+                        } else {
+                            return Future(undefined)
+                        }*/
+                    })
+                })
+            } else {
+                return Future(undefined)
+            }
+        })
     },
 
     defaultUnhandledErrorHandler: defaultUnhandledErrorHandler,
@@ -71,6 +145,30 @@ module.exports = deadunitCore({
             line: lineNumber,
             column: column
         }
+    },
+
+    getExceptionInfo: function(e) {
+        var info = stackTrace.parse(e)
+
+        var results = []
+        for(var n=0; n<info.length; n++) {
+            var infoElement = info[n]
+
+            var result = {
+                fn: infoElement.getFunctionName(),
+                file: infoElement.getFileName(),
+                line: infoElement.getLineNumber(),
+                column: infoElement.getColumnNumber()
+            }
+
+            for(var key in result) {
+                if(result[key] === null) result[key] = undefined
+            }
+
+            results.push(result)
+        }
+
+        return results
     }
 })
 
@@ -81,7 +179,6 @@ function defaultUnhandledErrorHandler(e) {
         else
             var errorString = e.toString()
 
-        if(errorString.red !== undefined) errorString = errorString.red
-            console.log(errorString)
+        console.log(color.red(errorString))
     },0)
 }

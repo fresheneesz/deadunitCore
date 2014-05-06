@@ -2,6 +2,8 @@ var http = require('http');
 var fs = require('fs')
 var url = require('url')
 
+require("./build") // rebuild first
+
 var server = http.createServer(function (request, res) {
     try {
         var requestUrl = url.parse(request.url)
@@ -14,12 +16,17 @@ var server = http.createServer(function (request, res) {
                 path = '/testDeadunitCore.html'
             }
 
-            res.writeHead(200);
-            res.write(fs.readFileSync(__dirname+path))
-            res.end()
+            var file = fs.readFileSync(__dirname+path)
+            res.writeHead(200)
+            res.write(file)
+        } else {
+            res.writeHead(400)
         }
     } catch(e) {
         console.log(e.message)
+        res.writeHead(500)
+    } finally {
+        res.end()
     }
 })
 

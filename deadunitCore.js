@@ -2,9 +2,11 @@
 /* Copyright (c) 2013 Billy Tetrud - Free to use for any purpose: MIT License*/
 
 var path = require('path')
+var Url = require("url")
 
 var proto = require('proto')
 var Future = require('async-future')
+var SourceMapConsumer = require('source-map').SourceMapConsumer
 
 var processResults = require('./processResults')
 
@@ -12,16 +14,21 @@ var processResults = require('./processResults')
 // options can contain:
     // initialization - a function run once that can setup things (like a global error handler).
         // Gets a single parameter 'state' which has the following form:
-            // unhandledErrorHandler
+            // unhandledErrorHandler(error,warn)
     // initializeMainTest - a function run once that can setup things (like a test-specific handler).
         // Gets a single parameter 'mainTestState' which has the following form:
-            // unhandledErrorHandler - the error handler for that test
+            // unhandledErrorHandler(error,warn) - the error handler for that test
+    // getDomain - a function that returns the current domain, or undefined if the environment (*cough* browsers) doesn't have domains
+    // getSourceMapObject - a function that returns a future of the pre-parsed source map object for a file, or future undefined
+        // gets the parameter:
+            // url - the url of the file to find a sourcemap for
+            // warningHandler - a warningHandler function that expects an error to be passed to it
     // runTestGroup - a function run that allows you to wrap the actual test run in some way (intended for node.js domains)
         // gets parameters:
             // state - the same state object sent into `initialization`
             // tester - a UnitTester object for the test
             // runTest - the function that you should call to run the test group. Already has a synchronous try catch inside it (so you don't need to worry about that)
-            // handleError - a function that handles an error if one comes up. Takes the error as its only parameter.
+            // handleError - a function that handles an error if one comes up. Takes the error as its only parameter. Returns a future.
     // mainTestDone - a function run once a test is done
         // gets the 'mainTestState' parameter
     // defaultUnhandledErrorHandler - a function that handles an error unhandled by any other handler
@@ -36,12 +43,6 @@ module.exports = function(options) {
 
     options.initialize(state)
 
-    // setup default unhandled error handler
-    // unhandled errors happen after the test has completed
-    function error(handler) {
-        state.unhandledErrorHandler = handler
-    }
-
     // the prototype of objects used to manage accessing and displaying results of a unit test
     var UnitTest = proto(function() {
         this.init = function(/*mainName=undefined, groups*/) {
@@ -55,7 +56,7 @@ module.exports = function(options) {
         }
 
         this.events = function(handlers) {
-            this.manager.add(handlers)
+            this.manager.add(handlers, options.getDomain())
             return this
         }
 
@@ -71,14 +72,36 @@ module.exports = function(options) {
                 fakeTest.manager = this.manager
                 fakeTest.timeouts = []
                 fakeTest.onDoneCallbacks = []
-                fakeTest.mainTestState = {get unhandledErrorHandler(){return fakeTest.unhandledErrorHandler || options.defaultTestErrorHandler(fakeTest)}}
+
+                var getUnhandledErrorHandler = function() {
+                    var unhandledErrorHandler = createUnhandledErrorHandler(fakeTest.mainSubTest)
+                    getUnhandledErrorHandler = function() { // memoize this junk
+                        return unhandledErrorHandler
+                    }
+                    return unhandledErrorHandler
+                }
+                fakeTest.mainTestState = {get unhandledErrorHandler(){return getUnhandledErrorHandler() || options.defaultTestErrorHandler(fakeTest)}}
+
+                var warningInfoMessageHasBeenOutput = false
+                fakeTest.manager.warningHandler = fakeTest.warningHandler = function(w) {
+                    var errorHandler = getUnhandledErrorHandler()
+                    if(warningInfoMessageHasBeenOutput === false) {
+                        var warning = newError("You've received at least one warning. If you don't want to treat warnings as errors, use the `warning` method to redefine how to handle them.")
+                        errorHandler(warning, false)
+                        warningInfoMessageHasBeenOutput = true
+                    }
+
+                    errorHandler(w, false)
+                }
 
                 options.initializeMainTest(fakeTest.mainTestState)
 
                 timeout(fakeTest, 3000, true) // initial (default) timeout
                 fakeTest.onDone = function() { // will execute when this test is done
-                    done(fakeTest)
-                    options.mainTestDone(fakeTest.mainTestState)
+                    fakeTest.manager.lastEmitFuture.then(function() { // wait for all the already-registered emits to emit before finalizing the test
+                        done(fakeTest)
+                        options.mainTestDone(fakeTest.mainTestState)
+                    }).done()
                 }
                 fakeTest.callOnDone = function(cb) {
                     fakeTest.onDoneCallbacks.push(cb)
@@ -110,24 +133,30 @@ module.exports = function(options) {
             }
 
             this.history = []
+            this.lastEmitFuture = Future(undefined)
         }
 
+        this.warningHandler;
+
         // emits an event
-        this.emit = function(type, eventData) {
-            this.history.push({type:type, data: eventData})
-            this.handlers[type].forEach(function(handler) {
-                try {
-                    handler.call(undefined, eventData)
-                } catch(e) {
-                    setTimeout(function() {
-                        throw e // throw error asynchronously because these error should be separate from the test exceptions
-                    },0)
-                }
+        // eventDataFuture resolves to either an eventData object, or undefined if nothing should be emitted
+        this.emit = function(type, eventDataFuture) {
+            var that = this
+            this.lastEmitFuture = this.lastEmitFuture.then(function() {
+                return eventDataFuture
+            }).then(function(eventData){
+                if(eventData !== undefined)
+                    recordAndTriggerHandlers.call(that, type, eventData)
+            }).catch(function(e) {
+                that.warningHandler(e)
             })
+
+            return this.lastEmitFuture
         }
 
         // adds a set of listening handlers to the event stream, and runs those handlers on the stream's history
-        this.add = function(handlers) {
+        // domain is optional, but if defined will be the node.js domain that unhandled errors will be routed to
+        this.add = function(handlers, domain) {
             // run the history of events on the the handlers
             this.history.forEach(function(e) {
                 if(handlers[e.type] !== undefined) {
@@ -142,32 +171,98 @@ module.exports = function(options) {
                     throw new Error("event type '"+type+"' invalid")
                 }
 
-                typeHandlers.push(handlers[type])
+                typeHandlers.push({handler: handlers[type], domain: domain})
             }
+        }
+
+        // the synchronous part of emitting
+        function recordAndTriggerHandlers(type, eventData) {
+            this.history.push({type:type, data: eventData})
+            this.handlers[type].forEach(function(handlerInfo) {
+                try {
+                    handlerInfo.handler.call(undefined, eventData)
+                } catch(e) {
+
+                    var throwErrorFn = function() {
+                        throw e // throw error asynchronously because these error should be separate from the test exceptions
+                    }
+
+                    if(handlerInfo.domain) {
+                        throwErrorFn = handlerInfo.domain.bind(throwErrorFn)    // this domain bind is needed because emit is done inside deadunit's test domain, which isn't where we want to put errors caused by the event handlers
+                    }
+
+                    setTimeout(throwErrorFn, 0)
+                }
+            })
         }
     })
 
     function testGroup(tester, test) {
 
         // handles any error (synchronous or asynchronous errors)
-        var handleError = function(e) {
-            tester.manager.emit('exception', {
-                parent: tester.id,
-                time: now(),
-                error: e
-            })
-        }
+        var handleError = createUnhandledErrorHandler(tester)
 
         var runTest = function() {
             try {
                 test.call(tester, tester) // tester is both 'this' and the first parameter (for flexibility)
             } catch(e) {
-                handleError(e)
+                handleError(e, true).done()
             }
-        }
+         }
 
         options.runTestGroup(state, tester, runTest, handleError)
     }
+
+    function createUnhandledErrorHandler(tester) {
+
+        // warn should be set to false if the handler is being called to report a warning
+        return function(e, warn) {
+            tester.waitingEmits++
+            if(!tester.mainTester.timingOut) {
+                tester.mainTester.waitingEmits += 1
+            }
+
+            if(tester.unhandledErrorHandler !== undefined) {
+                try {
+                    tester.unhandledErrorHandler(e)
+                    return Future(undefined)
+
+                } catch(newError) {     // error handler had an error...
+                    if(warn !== false) {
+                        try {
+                            tester.warningHandler(newError)
+                        } catch(warningHandlerError) {
+                            tester.manager.emit('exception', Future(warningHandlerError)).done() // if shit gets this bad, that sucks
+                        }
+                    }
+                }
+            }
+            // else
+
+            var errorToEmit = mapException(e, tester.warningHandler).catch(function(newError) {
+                if(newError.message !== "Accessing the 'caller' property of a function or arguments object is not allowed in strict mode") { // stacktrace.js doesn't support IE for certain things
+                    tester.warningHandler(newError)
+                }
+                return Future(e) // use the original unmapped exception
+
+            }).then(function(exception){
+                return Future(exceptionEmitData(tester,exception))
+            })
+
+            var emitFuture = tester.manager.emit('exception', errorToEmit)
+            return afterWaitingEmitIsComplete(tester, emitFuture)
+
+        }
+    }
+
+    function exceptionEmitData(tester, e) {
+        return {
+            parent: tester.id,
+            time: now(),
+            error: e
+        }
+    }
+
 
     // the prototype of objects used to write tests and contain the results of tests
     var UnitTester = function(name, mainTester) {
@@ -180,8 +275,9 @@ module.exports = function(options) {
         this.doneTests = 0
         this.doneAsserts = 0
         this.runningTests = 0 // the number of subtests created synchronously
-        this.waitingAsserts = 0 // since asserting is asynchronous, need to make sure they complete before the test can be declared finished
+        this.waitingEmits = 0 // since asserting and emitting errors is asynchronous, need to make sure they complete before the test can be declared finished
         this.doneCalled = false
+        this.doSourcemappery = true // whether to do source mapping, if possible, within this test
     }
 
         UnitTester.prototype = {
@@ -200,6 +296,8 @@ module.exports = function(options) {
 
                 var tester = new UnitTester(name, this.mainTester)
                 tester.manager = this.manager
+                tester.doSourcemappery = this.doSourcemappery // inherit from parent test
+                tester.warningHandler = this.warningHandler
 
                 if(this.id === undefined) { // ie its the top-level fake test
                     this.mainSubTest = tester
@@ -208,10 +306,10 @@ module.exports = function(options) {
                 tester.onDone = function() { // will execute when this test is done
                     that.doneTests += 1
 
-                    that.manager.emit('groupEnd', {
+                    that.manager.emit('groupEnd', Future({
                         id: tester.id,
                         time: now()
-                    })
+                    }))
 
                     checkGroupDone(that)
                 }
@@ -219,48 +317,48 @@ module.exports = function(options) {
                 tester.mainTester.callOnDone(function() {
                     if(!tester.doneCalled) { // a timeout happened - end the test
                         tester.doneCalled = true
-                        that.manager.emit('groupEnd', {
+                        that.manager.emit('groupEnd', Future({
                             id: tester.id,
                             time: now()
-                        })
+                        }))
                     }
                 })
 
-                this.manager.emit('group', {
+                this.manager.emit('group', Future({
                     id: tester.id,
                     parent: this.id,
                     name: name,
                     time: now()
-                })
+                }))
 
                 if(this.beforeFn) {
-                    this.manager.emit('before', {
+                    this.manager.emit('before', Future({
                         parent: tester.id,
                         time: now()
-                    })
+                    }))
 
                     this.beforeFn.call(this, this)
 
-                    this.manager.emit('beforeEnd', {
+                    this.manager.emit('beforeEnd', Future({
                         parent: tester.id,
                         time: now()
-                    })
+                    }))
                 }
 
                 testGroup(tester, test)
 
                 if(this.afterFn) {
-                    this.manager.emit('after', {
+                    this.manager.emit('after', Future({
                         parent: tester.id,
                         time: now()
-                    })
+                    }))
 
                     this.afterFn.call(this, this)
 
-                    this.manager.emit('afterEnd', {
+                    this.manager.emit('afterEnd', Future({
                         parent: tester.id,
                         time: now()
-                    })
+                    }))
                 }
 
                 tester.groupEnded = true
@@ -271,30 +369,18 @@ module.exports = function(options) {
 
             ok: function(success, actualValue, expectedValue) {
                 this.doneAsserts += 1
-                assert(this, success, actualValue, expectedValue, 'assert', "ok").then(function() {
-                    this.waitingAsserts --
-                    this.mainTester.waitingAsserts --
-                    checkGroupDone(this)
-                }.bind(this)).done()
+                afterWaitingEmitIsComplete(this, assert(this, success, actualValue, expectedValue, 'assert', "ok")).done()
             },
             equal: function(expectedValue, testValue) {
                 this.doneAsserts += 1
-                assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal").then(function() {
-                    this.waitingAsserts --
-                    this.mainTester.waitingAsserts --
-                    checkGroupDone(this)
-                }.bind(this)).done()
+                afterWaitingEmitIsComplete(this, assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal")).done()
             },
             count: function(number) {
                 if(this.countExpected !== undefined)
                     throw Error("count called multiple times for this test")
                 this.countExpected = number
 
-                assert(this, undefined, undefined, number, 'count', "count").then(function() {
-                    this.waitingAsserts --
-                    this.mainTester.waitingAsserts --
-                    checkGroupDone(this)
-                }.bind(this)).done()
+                afterWaitingEmitIsComplete(this,assert(this, undefined, undefined, number, 'count', "count")).done()
             },
 
             before: function(fn) {
@@ -311,11 +397,11 @@ module.exports = function(options) {
             },
 
             log: function(/*arguments*/) {
-                this.manager.emit('log', {
+                this.manager.emit('log', Future({
                     parent: this.id,
                     time: now(),
                     values: Array.prototype.slice.call(arguments, 0)
-                })
+                }))
             },
 
             timeout: function(t) {
@@ -324,11 +410,26 @@ module.exports = function(options) {
 
             error: function(handler) {
                 this.unhandledErrorHandler = handler
+            },
+            warning: function(handler) {
+                this.warningHandler = handler
+            },
+
+            sourcemap: function(doSourcemappery) {
+                this.doSourcemappery = doSourcemappery
             }
         }
 
+    function afterWaitingEmitIsComplete(that, assertFuture) {
+        return assertFuture.finally(function(){
+            that.waitingEmits --
+            that.mainTester.waitingEmits --
+            checkGroupDone(that)
+        })
+    }
+
     function checkGroupDone(group) {
-        if(!group.doneCalled && group.groupEnded === true && group.waitingAsserts === 0
+        if(!group.doneCalled && group.groupEnded === true //&& group.waitingEmits === 0
             && ((group.countExpected === undefined || group.countExpected <= group.doneAsserts+group.doneTests)
                 && group.runningTests === group.doneTests)
         ) {
@@ -340,11 +441,11 @@ module.exports = function(options) {
 
     function done(unitTester) {
         if(unitTester.mainTester.ended) {
-            unitTester.mainTester.manager.emit('exception', {
+            unitTester.mainTester.manager.emit('exception', Future({
                 parent: unitTester.mainTester.mainSubTest.id,
                 time: now(),
-                error: new Error("done called more than once (probably because the test timed out before it finished)")
-            })
+                error: newError("done called more than once (probably because the test timed out before it finished)")
+            }))
         } else {
             unitTester.mainTester.timeouts.forEach(function(to) {
                 clearTimeout(to)
@@ -356,19 +457,21 @@ module.exports = function(options) {
     }
 
     // if a timeout is the default, it can be overridden
-    function timeout(that, t, theDefault) {
-        var to = setTimeout(function() {
-            remove(that.mainTester.timeouts, to)
+    function timeout(unitTester, t, theDefault) {
+        var timeouts = unitTester.mainTester.timeouts
 
-            if(that.mainTester.timeouts.length === 0 && !that.mainTester.ended) {
-                that.mainTester.timingOut = true
+        var to = setTimeout(function() {
+            remove(timeouts, to)
+
+            if(timeouts.length === 0 && !unitTester.mainTester.ended) {
+                unitTester.mainTester.timingOut = true
                 checkIfTestIsReadyToEnd()
             }
 
             function checkIfTestIsReadyToEnd() {
                 setTimeout(function() {
-                    if(that.mainTester.waitingAsserts <= 0) {
-                        endTest(that.mainTester, 'timeout')
+                    if(unitTester.mainTester.waitingEmits <= 0) {
+                        endTest(unitTester.mainTester, 'timeout')
                     } else {
                         checkIfTestIsReadyToEnd()
                     }
@@ -376,14 +479,14 @@ module.exports = function(options) {
             }
         }, t)
 
-        that.mainTester.timeouts.push(to)
+        timeouts.push(to)
 
         if(theDefault) {
-            that.mainTester.timeouts.default = to
-        } else if(that.mainTester.timeouts.default !== undefined) {
-            clearTimeout(that.mainTester.timeouts.default)
-            remove(that.mainTester.timeouts, that.mainTester.timeouts.default)
-            that.mainTester.timeouts.default = undefined
+            timeouts.default = to
+        } else if(timeouts.default !== undefined) {
+            clearTimeout(timeouts.default)
+            remove(timeouts, timeouts.default)
+            timeouts.default = undefined
         }
 
         function remove(array, item) {
@@ -403,26 +506,26 @@ module.exports = function(options) {
             })
         }
 
-        that.manager.emit('end', {
+        that.manager.emit('end', Future({
             type: type,
             time: now()
-        })
+        }))
     }
 
     function assert(that, success, actualValue, expectedValue, type, functionName/*="ok"*/, lineInfo/*=dynamic*/, stackIncrease/*=0*/) {
         if(!stackIncrease) stackIncrease = 1
         if(!functionName) functionName = "ok"
         if(!lineInfo)
-            var lineInfoFuture = getLineInformation(functionName, stackIncrease)
+            var lineInfoFuture = getLineInformation(functionName, stackIncrease, that.doSourcemappery, that.warningHandler)
         else
             var lineInfoFuture = Future(lineInfo)
 
-        that.waitingAsserts += 1
+        that.waitingEmits += 1
         if(!that.mainTester.timingOut) {
-            that.mainTester.waitingAsserts += 1
+            that.mainTester.waitingEmits += 1
         }
 
-        return lineInfoFuture.then(function(lineInfo) {
+        var emitData = lineInfoFuture.then(function(lineInfo) {
             var result = lineInfo
             result.type = 'assert'
             result.success = success
@@ -433,51 +536,283 @@ module.exports = function(options) {
             result.parent = that.id
             result.time = now()
 
-            that.manager.emit(type, result)
+           return Future(result)
         })
+
+        return that.manager.emit(type, emitData)
     }
 
 
-    function getLineInformation(functionName, stackIncrease) {
+    function getLineInformation(functionName, stackIncrease, doSourcemappery, warningHandler) {
         var info = options.getLineInfo(stackIncrease)
-        return getFunctionCallLines(info.file, functionName, info.line).then(function(sourceLines) {
-            return Future({
-                sourceLines: sourceLines,
-                file: path.basename(info.file),
-                line: info.line,
-                column: info.column
+
+        return getSourceMapConsumer(info.file, warningHandler).catch(function(e){
+            warningHandler(e)
+            return Future(undefined)
+
+        }).then(function(sourceMapConsumer) {
+            if(sourceMapConsumer !== undefined && doSourcemappery) {
+
+                var mappedInfo = getMappedSourceInfo(sourceMapConsumer, info.file, info.line, info.column)
+                var file = mappedInfo.file
+                var line = mappedInfo.line
+                var column = mappedInfo.column
+
+                var multiLineSearch = !mappedInfo.usingOriginalFile // don't to a multi-line search if the source has been mapped (the file might not be javascript)
+                var sourceLines = getFunctionCallLines(mappedInfo.file, functionName, mappedInfo.line, multiLineSearch, warningHandler)
+
+            } else {
+                var file = info.file
+                var line = info.line
+                var column = info.column
+                var sourceLines = getFunctionCallLines(file, functionName, line, true, warningHandler)
+            }
+
+            return sourceLines.then(function(sourceLines) {
+                return Future({
+                    sourceLines: sourceLines,
+                    file: path.basename(file),
+                    line: line,
+                    column: column
+                })
             })
         })
     }
 
+    // returns the line, column, and filename mapped from a source map
+    // appropriately handles cases where some information is missing
+    function getMappedSourceInfo(sourceMapConsumer, originalFilePath, originalLine, originalColumn, originalFunctionName) {
+        var sourceMapInfo = sourceMapConsumer.originalPositionFor({line:originalLine, column:originalColumn||0})       // the 0 is for browsers (like firefox) that don't output column numbers
+        var line = sourceMapInfo.line
+        var column = sourceMapInfo.column
+        var fn = sourceMapInfo.name
+
+        if(sourceMapInfo.source !== null) {
+            var file = Url.resolve(originalFilePath, path.basename(sourceMapInfo.source))
+            var originalFile = true
+        } else {
+            var file = originalFilePath
+            var originalFile = false
+        }
+
+        if(fn === null || !originalFile) {
+            fn = originalFunctionName
+        }
+        if(line === null || !originalFile) {
+            line = originalLine
+            column = originalColumn
+        }
+        if(column === null) {
+            column = undefined
+        }
+
+        return {
+            file: file,
+            fn: fn,
+            line: line,
+            column: column,
+            usingOriginalFile: originalFile
+        }
+    }
+
     // gets the actual lines of the call
-    // todo: make this work when call is over multiple lines (you would need to count parens and check for quotations)
-    function getFunctionCallLines(fileName, functionName, lineNumber) {
-        return options.getScriptSource(fileName).then(function(file) {
+    // if multiLineSearch is true, it finds
+    function getFunctionCallLines(filePath, functionName, lineNumber, multiLineSearch, warningHandler) {
+        return options.getScriptSourceLines(filePath).catch(function(e) {
+            warningHandler(e)
+            return Future(undefined)
 
-            if(file !== undefined) {
-                var fileLines = file.split("\n")
+        }).then(function(fileLines) {
+            if(fileLines !== undefined) {
 
-                var lines = []
-                for(var n=0; n<true; n++) {
-                    var line = fileLines[lineNumber - 1 - n]
-                    if(line === undefined) {
-                        break;
-                    }
+                var startLine = findStartLine(fileLines, functionName, lineNumber)
+                if(startLine === 'lineOfCodeNotFound') {
+                    return Future("<line of code not found (possibly an error?)> ")
 
-                    lines.push(line.trim())
-                    var containsFunction = line.indexOf(functionName) !== -1
-                    if(containsFunction) {
-                        return Future(lines.reverse().join('\n'))
-                    }
-                    if(lineNumber - n < 0) {
-                        return Future("<no lines found (possibly an error?)> ")	// something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
+                } else if(startLine !== 'sourceNotAvailable') {
+                    if(multiLineSearch) {
+                        return Future(findFullSourceLine(fileLines, startLine))
+                    } else {
+                        return Future(fileLines[startLine].trim())
                     }
                 }
             }
             // else
             return Future("<source not available>")
         })
+    }
+
+    var sourceMapConsumerCache = {} // a map from a script url to a future of its SourceMapConsumer object (null means no sourcemap exists)
+    function getSourceMapConsumer(url, warningHandler) {
+        if(sourceMapConsumerCache[url] === undefined) {
+            sourceMapConsumerCache[url] = options.getSourceMapObject(url, warningHandler).then(function(sourceMapObject) {
+                if(sourceMapObject !== undefined) {
+                    if(sourceMapObject.version === undefined) {
+                        warningHandler(new Error("Sourcemap for "+url+" doesn't contain the required 'version' property. Assuming version 2."))
+                        sourceMapObject.version = 2 // assume version 2 to make browserify's broken sourcemap format that omits the version
+                    }
+                    return Future(new SourceMapConsumer(sourceMapObject))
+                } else {
+                    return Future(undefined)
+                }
+            })
+        }
+
+        return sourceMapConsumerCache[url]
+    }
+
+    // takes an exception and returns a future exception that has a stacktrace with sourcemapped tracelines
+    function mapException(exception, warningHandler) {
+        try {
+            if(exception instanceof Error) {
+                var trace = options.getExceptionInfo(exception)
+                var smcFutures = []
+                for(var n=0; n<trace.length; n++) {
+                    if(trace[n].file !== undefined) {
+                        smcFutures.push(getSourceMapConsumer(trace[n].file, warningHandler))
+                    } else {
+                        smcFutures.push(Future(undefined))
+                    }
+                }
+
+                return Future.all(smcFutures).then(function(sourceMapConsumers) {
+                    var CustomMappedException = proto(MappedException, function() {
+                        // set the name so it looks like the original exception when printed
+                        // this subclasses MappedException so that name won't be an own-property
+                        this.name = exception.name
+                    })
+
+                    try {
+                        throw CustomMappedException(exception, trace, sourceMapConsumers)  // IE doesn't give exceptions stack traces unless they're actually thrown
+                    } catch(mappedExcetion) {
+                        return Future(mappedExcetion)
+                    }
+                })
+            } else {
+                return Future(exception)
+            }
+        } catch(e) {
+            var errorFuture = new Future
+            errorFuture.throw(e)
+            return errorFuture
+        }
+    }
+
+    // an exception where the stacktrace's files and lines are mapped to the original file (when applicable)
+    var MappedException = proto(Error, function(superclass) {
+
+        // constructor. Takes the parameters:
+            // originalError
+            // traceInfo - an array where each element is an object containing information about that stacktrace line
+            // sourceMapConsumers - an array of the same length as traceInfo where each element is the sourcemap consumer for the corresponding info in traceInfo
+        this.init = function(originalError, traceInfo, sourceMapConsumers) {
+            superclass.call(this, originalError.message)
+
+            for(var p in originalError) {
+                if(Object.hasOwnProperty.call(originalError, p)) {
+                    this[p] = originalError[p]
+                }
+            }
+
+            var newTraceLines = []
+            for(var n=0; n<traceInfo.length; n++) {
+                var info = traceInfo[n]
+                if(sourceMapConsumers[n] !== undefined) {
+                    info = getMappedSourceInfo(sourceMapConsumers[n], info.file, info.line, info.column, info.fn)
+                }
+
+                var fileLineColumn = info.line
+                if(info.column !== undefined) {
+                    fileLineColumn += ':'+info.column
+                }
+                if(info.file !== undefined) {
+                    fileLineColumn = info.file+':'+fileLineColumn
+                }
+
+                var traceLine = "    at "
+                if(info.fn !== undefined) {
+                    traceLine += info.fn+' ('+fileLineColumn+')'
+                } else {
+                    traceLine += fileLineColumn
+                }
+
+                newTraceLines.push(traceLine)
+            }
+
+            this.stack = this.name+': '+this.message+'\n'+newTraceLines.join('\n')
+        }
+    })
+
+    // attempts to find the full function call expression (over multiple lines) given the sources lines and a starting point
+    function findFullSourceLine(fileLines, startLine) {
+        var lines = []
+        var parenCount = 0
+        var mode = 0 // mode 0 for paren searching, mode 1 for double-quote searching, mode 2 for single-quote searching
+        var lastWasBackslash = false // used for quote searching
+        for(var n=startLine; true; n++) {
+            var line = fileLines[n]
+            lines.push(line.trim())
+
+            for(var i=0; i<line.length; i++) {
+                var c = line[i]
+
+                if(mode === 0) {
+                    if(c === '(') {
+                        parenCount++
+                        //if(parenCount === 0) {
+                          //  return lines.join('\n') // done
+                        //}
+                    } else if(c === ')' && parenCount > 0) {
+                        parenCount--
+                        if(parenCount === 0) {
+                            return lines.join('\n') // done
+                        }
+                    } else if(c === '"') {
+                        mode = 1
+                    } else if(c === "'") {
+                        mode = 2
+                    }
+                } else if(mode === 1) {
+                    if(c === '"' && !lastWasBackslash) {
+                        mode = 0
+                    }
+
+                    lastWasBackslash = c==='\\'
+                } else { // mode === 2
+                    if(c === "'" && !lastWasBackslash) {
+                        mode = 0
+                    }
+
+                    lastWasBackslash = c==='\\'
+                }
+            }
+        }
+
+        return lines.join('\n') // if it gets here, something minor went wrong
+    }
+
+    // finds the line a function started on given the file's lines, and the stack trace line number (and function name)
+    // returns undefined if something went wrong finding the startline
+    function findStartLine(fileLines, functionName, lineNumber) {
+        var startLine = lineNumber - 1
+        while(true) {
+            if(startLine < 0) {
+                return 'lineOfCodeNotFound' // something went wrong if this is being returned (the functionName wasn't found above - means you didn't get the function name right)
+            }
+
+            var line = fileLines[startLine]
+            if(line === undefined) {
+                return 'sourceNotAvailable'
+            }
+
+            //lines.push(line.trim())
+            var containsFunction = line.indexOf(functionName) !== -1
+            if(containsFunction) {
+                return startLine
+            }
+
+            startLine--
+        }
     }
 
     function groupid() {
@@ -492,7 +827,14 @@ module.exports = function(options) {
     }
 
     return {
-        error: error,
         test: UnitTest
+    }
+}
+
+function newError(message, ErrorPrototype) {
+    try {
+        throw new Error(message) // IE needs an exception to be actually thrown to get a stack trace property
+    } catch(e) {
+        return e
     }
 }

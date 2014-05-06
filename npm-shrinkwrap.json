@@ -2,63 +2,67 @@
   "name": "deadunit-core",
   "version": "4.0.6",
   "dependencies": {
+    "ajax": {
+      "version": "1.0.2",
+      "from": "https://github.com/fresheneesz/ajax/archive/c0f12d10544a247bfa58b15e9535ee2ffd5787d1.tar.gz",
+      "resolved": "https://github.com/fresheneesz/ajax/archive/c0f12d10544a247bfa58b15e9535ee2ffd5787d1.tar.gz"
+    },
     "async-future": {
-      "version": "0.1.6",
-      "from": "async-future@0.1.6",
-      "resolved": "https://registry.npmjs.org/async-future/-/async-future-0.1.6.tgz",
+      "version": "0.1.18",
+      "from": "async-future@0.1.18",
+      "resolved": "https://registry.npmjs.org/async-future/-/async-future-0.1.18.tgz",
       "dependencies": {
         "trimArguments": {
           "version": "1.0.0",
           "from": "https://github.com/fresheneesz/trimArguments/archive/e69ed3ebdfe6cf055916ba6e3a1e4b28f696da6f.tar.gz",
           "resolved": "https://github.com/fresheneesz/trimArguments/archive/e69ed3ebdfe6cf055916ba6e3a1e4b28f696da6f.tar.gz"
-        },
-        "buildModules": {
-          "version": "1.0.0",
-          "from": "https://github.com/fresheneesz/buildModules/archive/2f50ea0830b0fa580c087b4bfa947de2e7b7d7c3.tar.gz",
-          "resolved": "https://github.com/fresheneesz/buildModules/archive/2f50ea0830b0fa580c087b4bfa947de2e7b7d7c3.tar.gz",
-          "dependencies": {
-            "uglify-js": {
-              "version": "2.4.12",
-              "from": "uglify-js@~2.4.0",
-              "dependencies": {
-                "async": {
-                  "version": "0.2.10",
-                  "from": "async@~0.2.6"
-                },
-                "source-map": {
-                  "version": "0.1.31",
-                  "from": "source-map@~0.1.7",
-                  "dependencies": {
-                    "amdefine": {
-                      "version": "0.1.0",
-                      "from": "amdefine@>=0.0.4"
-                    }
-                  }
-                },
-                "optimist": {
-                  "version": "0.3.7",
-                  "from": "optimist@~0.3.5",
-                  "dependencies": {
-                    "wordwrap": {
-                      "version": "0.0.2",
-                      "from": "wordwrap@~0.0.2"
-                    }
-                  }
-                },
-                "uglify-to-browserify": {
-                  "version": "1.0.1",
-                  "from": "uglify-to-browserify@~1.0.0"
-                }
-              }
-            }
-          }
         }
       }
     },
+    "colors": {
+      "version": "0.6.2",
+      "from": "https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz",
+      "resolved": "https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz"
+    },
     "proto": {
       "version": "1.0.9",
-      "from": "proto@1.0.9",
-      "resolved": "https://registry.npmjs.org/proto/-/proto-1.0.9.tgz"
+      "from": "proto@1.0.9"
+    },
+    "resolve-url": {
+      "version": "0.2.1",
+      "from": "resolve-url@~0.2.1",
+      "resolved": "https://registry.npmjs.org/resolve-url/-/resolve-url-0.2.1.tgz"
+    },
+    "source-map": {
+      "version": "0.1.33",
+      "from": "source-map@",
+      "dependencies": {
+        "amdefine": {
+          "version": "0.1.0",
+          "from": "amdefine@>=0.0.4"
+        }
+      }
+    },
+    "source-map-resolve": {
+      "version": "0.1.2",
+      "from": "source-map-resolve@",
+      "resolved": "https://registry.npmjs.org/source-map-resolve/-/source-map-resolve-0.1.2.tgz",
+      "dependencies": {
+        "source-map-url": {
+          "version": "0.2.0",
+          "from": "source-map-url@~0.2.0",
+          "resolved": "https://registry.npmjs.org/source-map-url/-/source-map-url-0.2.0.tgz"
+        },
+        "atob": {
+          "version": "1.1.0",
+          "from": "atob@~1.1.0"
+        },
+        "urix": {
+          "version": "0.1.0",
+          "from": "urix@~0.1.0",
+          "resolved": "https://registry.npmjs.org/urix/-/urix-0.1.0.tgz"
+        }
+      }
     },
     "stack-trace": {
       "version": "0.0.7",
@@ -66,9 +70,9 @@
       "resolved": "https://registry.npmjs.org/stack-trace/-/stack-trace-0.0.7.tgz"
     },
     "stackinfo": {
-      "version": "1.0.4",
-      "from": "stackinfo@1.0.4",
-      "resolved": "https://registry.npmjs.org/stackinfo/-/stackinfo-1.0.4.tgz",
+      "version": "1.1.2",
+      "from": "stackinfo@1.1.2",
+      "resolved": "https://registry.npmjs.org/stackinfo/-/stackinfo-1.1.2.tgz",
       "dependencies": {
         "stacktrace-js": {
           "version": "0.6.0",

@@ -1,9 +1,55 @@
 "use strict";
 /* Copyright (c) 2014 Billy Tetrud - Free to use for any purpose: MIT License*/
 
-var deadunitCore = require("./deadunitCore")
+var path = require('path');
+
 var Future = require('async-future')
 var stackinfo = require('stackinfo')
+var ajax = require("ajax")
+var resolveSourceMap = Future.wrap(require('source-map-resolve').resolveSourceMap)
+
+var deadunitCore = require("./deadunitCore")
+
+
+ajax.setSynchronous(true) // todo: REMOVE THIS once this chrome bug is fixed in a public release: https://code.google.com/p/chromium/issues/detail?id=368444
+
+// add sourceFile contents into stacktrace.js's cache
+var sourceCache = {}
+var cacheGet = function(url) {
+    return sourceCache[url]
+}
+var cacheSet = function(url, responseFuture) {
+    sourceCache[url] = responseFuture
+    if(stackinfo.sourceCache[url] === undefined) {
+        responseFuture.then(function(response) {
+            stackinfo.sourceCache[url] = response.text.split('\n')
+        }).done()
+    }
+}
+
+if(window.setImmediate === undefined) {
+    window.setImmediate = function(fn, params) {
+        setTimeout(function() {
+            fn.apply(this,params)
+        },0)
+    }
+}
+
+ajax.cacheGet(cacheGet)
+ajax.cacheSet(cacheSet)
+
+// node.js errback style readFile
+function readFile(url, callback) {
+    ajax(url).then(function(response) {
+        callback(undefined, response.text)
+    }).catch(callback).done()
+}
+
+function isRelative(p) {
+    var normal = path.normalize(p);
+    var absolute = path.resolve(p);
+    return normal != absolute;
+}
 
 module.exports = deadunitCore({
     initialize: function() {},
@@ -13,9 +59,16 @@ module.exports = deadunitCore({
 
         testState.oldOnerror = window.onerror
         testState.newOnerror = window.onerror = function(errorMessage, filename, line, column) {
-            //if(testState.active)
-                testState.unhandledErrorHandler("Uncaught error in "+filename+" line "+line+"/"+column+": "+errorMessage)
-            if(testState.oldOnerror) testState.oldOnerror.apply(this, arguments)
+            if(column === undefined) var columnText = ''
+            else                     var columnText = "/"+column
+
+            try {
+                throw new Error("Uncaught error in "+filename+" line "+line+columnText+": "+errorMessage) // IE needs the exception to actually be thrown before it will have a stack trace
+            } catch(e) {
+                testState.unhandledErrorHandler(e, true)
+                if(testState.oldOnerror)
+                    testState.oldOnerror.apply(this, arguments)
+            }
         }
     },
     mainTestDone: function(testState) {
@@ -24,11 +77,56 @@ module.exports = deadunitCore({
             window.onerror = testState.oldOnerror // otherwise something else has overwritten onerror, so don't mess with it
         }*/
     },
+
+    getDomain: function() {
+        return undefined // domains don't exist in-browser
+    },
+
     runTestGroup: function(deadunitState, tester, runTest, handleError, handleUnhandledError) {
         runTest()
     },
-    getScriptSource: function(path) {
-        return load(path)
+    getScriptSourceLines: function(path) {
+        if(stackinfo.sourceCache[path] !== undefined) {
+            return Future(stackinfo.sourceCache[path])
+        } else {
+            return ajax(path).then(function(response) {
+                return Future(response.text.split('\n'))
+            })
+        }
+
+    },
+    getSourceMapObject: function(url, warningHandler) {
+        return ajax(url).then(function(response) {
+            var headers = response.headers
+            if(headers['SourceMap'] !== undefined) {
+                var headerSourceMap = headers['SourceMap']
+            } else if(headers['X-SourceMap']) {
+                var headerSourceMap = headers['X-SourceMap']
+            }
+
+            if(headerSourceMap !== undefined) {
+                if(isRelative(headerSourceMap)) {
+                    headerSourceMap = path.join(path.dirname(url),headerSourceMap)
+                }
+
+                return ajax(headerSourceMap).then(function(response) {
+                    return Future(JSON.parse(response.text))
+                })
+
+            } else {
+                return resolveSourceMap(response.text, url, readFile).catch(function(e){
+                    warningHandler(e)
+                    return Future(undefined)
+
+                }).then(function(sourceMapObject) {
+                    if(sourceMapObject !== null) {
+                        return Future(sourceMapObject.map)
+                    } else {
+                        return Future(undefined)
+                    }
+                })
+            }
+        })
     },
 
     defaultUnhandledErrorHandler: function(e) {
@@ -52,63 +150,9 @@ module.exports = deadunitCore({
 
     getLineInfo: function(stackIncrease) {
         return stackinfo()[3+stackIncrease]
+    },
+
+    getExceptionInfo: function(e) {
+        return stackinfo(e)
     }
 })
-
-
-var loadCache = {}
-function load(url) {
-    if(loadCache[url] !== undefined)
-        return loadCache[url]
-
-    var result = new Future
-    try {
-        loadCache[url] = result.catch(function(e) {
-            // ignore the error
-            return undefined // pass on undefined to indicate that the file couldn't be downloaded
-        })
-
-        var httpReq
-        var versions = ["MSXML2.XmlHttp.5.0",
-                        "MSXML2.XmlHttp.4.0",
-                        "MSXML2.XmlHttp.3.0",
-                        "MSXML2.XmlHttp.2.0",
-                        "Microsoft.XmlHttp"];
-
-        if(window.XMLHttpRequest) {
-            //    For Mozilla, Safari (non IE browsers)
-            httpReq = new XMLHttpRequest();
-        } else if( window.ActiveXObject ) {
-            //    For IE browsers
-            for(var i = 0, n=versions.length; i < n; i++ ) {
-                try {
-                    httpReq = new ActiveXObject(versions[i]);
-                } catch(e) {   }
-            }
-        }
-
-        if (!httpReq) {
-            throw new Error('Cannot create an XMLHTTP instance')
-        }
-
-        httpReq.onreadystatechange = function() {
-            if( httpReq.readyState === 4 ) {
-                if( httpReq.status === 200 ) {
-                    result.return(httpReq.responseText)
-                } else {
-                    if(!result.isResolved)
-                        result.throw(new Error('Error in request'))
-                }
-            }
-        };
-
-        httpReq.open('GET', url);
-        httpReq.send();
-
-    } catch(e) {
-        if(!result.isResolved)
-            result.throw(e)
-    }
-
-    return loadCache[url]
-}

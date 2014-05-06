@@ -1,7 +1,9 @@
 var build = require('build-modules')
 
+
+
 build(__dirname+'/browserPackage/', 'deadunitCore.browser.gen', '/*Copyright 2014 Billy Tetrud - MIT license, free for any use*/',
-    __dirname+"/deadunitCore.browser.js",
+    __dirname+"/deadunitCore.browser.js", {},
     function(e) {
         if(e === undefined) {
             console.log('done building browser package')
@@ -11,15 +13,31 @@ build(__dirname+'/browserPackage/', 'deadunitCore.browser.gen', '/*Copyright 201
         }
 })
 
-build(__dirname+'/test/', 'deadunitTests.browser', '/*Copyright 2014 Billy Tetrud - MIT license, free for any use*/',
-    __dirname+"/test/deadunitTests.js",
+// test stuff
+/*
+build(__dirname+'/test/', 'inlineSourceMapTest.browserified', '',  ;; do NOT rebuild this browserified bundle because it was manually changed
+    __dirname+"/test/inlineSourceMapTest.js", {debug:true},
     function(e) {
         if(e === undefined) {
-            console.log('done building test package')
+            console.log('done building inlineSourceMapTest.browserified')
+            //*/
+            build(__dirname+'/test/', 'deadunitTests.browser', '/*Copyright 2014 Billy Tetrud - MIT license, free for any use*/',
+                __dirname+"/test/deadunitTests.js", {debug:true},
+                function(e) {
+                    if(e === undefined) {
+                        console.log('done building test package')
+                    } else {
+                        console.log(e.stack)
+                        process.exit(1)
+                    }
+            })
+                /*
         } else {
             console.log(e.stack)
             process.exit(1)
         }
 })
+//*/
+
 
 

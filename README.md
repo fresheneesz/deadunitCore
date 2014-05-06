@@ -70,6 +70,11 @@ Usage
 var Unit = require('deadunit-core')
 ```
 
+##### [webpack](https://github.com/webpack/webpack)
+```javascript
+var Unit = require('deadunit-core/deadunitCore.browser')
+```
+
 ##### require.js
 ```javascript
 require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(Unit) {
@@ -85,9 +90,7 @@ require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(U
 `Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object. Returns without having run the tests first - the tests are scheduled to run asynchronously soon thereafter.
 
  * `<name>` - (optional) names the test
- * `<testFunction>` - a function that contains the asserts and sub-tests to be run. Both its one parameter and its bound `this` is given the same `UnitTester` object.
-
-`Unit.error(<errorHandler>)` - sets up a default function that is called when an unhandled error happens. The main use case for this right now is if the test results were grabbed before the test was finished running.
+ * `<testFunction>` - a function that contains the asserts and sub-tests to be run. Both its only parameter and its bound `this` is given the same `UnitTester` object.
 
 UnitTester
 ----------
@@ -110,7 +113,9 @@ UnitTester
 
 `this.after(<function>)` - Runs the passed `<function>` once after each subtest in the test.
 
-`this.error(<function>)` - Sets up a function that handles unhandled errors that happen specifically inside `this` test. This overrides a handler set up by `Unit.error`. Currently, this does  *not* catch undhandled errors thrown by child-tests.
+`this.error(<function>)` - Overrides the unhandled exception handler (that catches errors and records them in the test results) specifically for unhandled errors that happen inside `this` test (not child tests). Unhandled exceptions will come through this function *instead* of being recorded in the test results.
+
+`this.sourcemap(<enable>)` - enables (`true`) or disables (`false`) source mapping of printed exceptions with a given test. Source mapping of exceptions is enabled by default.
 
 UnitTest
 ----------
@@ -245,8 +250,8 @@ Environment/Browser Support
 
 * node.js
 * Browsers
- * Chrome 31
- * Firefox 26
+ * Chrome 31, 33, 34
+ * Firefox 26, 28
  * IE 10
 
 This needs more testing! Please help by testing and reporting bugs in other browsers or browser versions!
@@ -254,13 +259,14 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
+* remove `resolve-url` as a dependency once `source-map-resolver`
+* Look into using https://ci.testling.com/ for browser testing
 * There's already a way to work around dead fibers, but still need to make a way to work around dead futures
   * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
     * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)
-* Get rid of `Unit.error` and make `test.error` catch unhandled exceptions from child tests (if the child tests don't have their own handler)
+  * This would have to require that no asserts happen after subtests start being created (because it would be confusing that those asserts happen before the subtests written before them, because the subtests happen asynchronously)
+    * throw an error for any this.ok or this.count run for any test that already contains subtests this.test
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
-* fix up sourceLines grabbing so that it properly grabs the source for asserts that span multiple lines
-  * maybe also so it strips off the "this.ok()" part of the line
 
 How to Contribute!
 ============
@@ -288,6 +294,12 @@ How to Contribute!
 
 Changelog
 ========
+* 5.0.0
+    * Sourcemap support
+    * Got rid of `Unit.error`
+    * Fixing bug in the `string` method introduced in the last version
+    * fixed up sourceLines grabbing so that it can grab the source for asserts that span multiple lines
+    * Consolidate file cache between deadunit-core's and stacktrace.js's sourcefile loading and exposed a way to override deadunit-core's file cache
 * 4.0.6 - updating stackinfo
 * 4.0.5 - Fixing bug where deadunit would crash if an asynchronous error was thrown from the main test
 * 4.0.3
