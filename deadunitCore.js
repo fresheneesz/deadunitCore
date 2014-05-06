@@ -217,11 +217,6 @@ module.exports = function(options) {
 
         // warn should be set to false if the handler is being called to report a warning
         return function(e, warn) {
-            tester.waitingEmits++
-            if(!tester.mainTester.timingOut) {
-                tester.mainTester.waitingEmits += 1
-            }
-
             if(tester.unhandledErrorHandler !== undefined) {
                 try {
                     tester.unhandledErrorHandler(e)
@@ -275,7 +270,6 @@ module.exports = function(options) {
         this.doneTests = 0
         this.doneAsserts = 0
         this.runningTests = 0 // the number of subtests created synchronously
-        this.waitingEmits = 0 // since asserting and emitting errors is asynchronous, need to make sure they complete before the test can be declared finished
         this.doneCalled = false
         this.doSourcemappery = true // whether to do source mapping, if possible, within this test
     }
@@ -421,15 +415,13 @@ module.exports = function(options) {
         }
 
     function afterWaitingEmitIsComplete(that, assertFuture) {
-        return assertFuture.finally(function(){
-            that.waitingEmits --
-            that.mainTester.waitingEmits --
+        return assertFuture.finally(function() {
             checkGroupDone(that)
         })
     }
 
     function checkGroupDone(group) {
-        if(!group.doneCalled && group.groupEnded === true //&& group.waitingEmits === 0
+        if(!group.doneCalled && group.groupEnded === true
             && ((group.countExpected === undefined || group.countExpected <= group.doneAsserts+group.doneTests)
                 && group.runningTests === group.doneTests)
         ) {
@@ -464,18 +456,7 @@ module.exports = function(options) {
             remove(timeouts, to)
 
             if(timeouts.length === 0 && !unitTester.mainTester.ended) {
-                unitTester.mainTester.timingOut = true
-                checkIfTestIsReadyToEnd()
-            }
-
-            function checkIfTestIsReadyToEnd() {
-                setTimeout(function() {
-                    if(unitTester.mainTester.waitingEmits <= 0) {
-                        endTest(unitTester.mainTester, 'timeout')
-                    } else {
-                        checkIfTestIsReadyToEnd()
-                    }
-                },10)
+                endTest(unitTester.mainTester, 'timeout')
             }
         }, t)
 
@@ -519,11 +500,6 @@ module.exports = function(options) {
             var lineInfoFuture = getLineInformation(functionName, stackIncrease, that.doSourcemappery, that.warningHandler)
         else
             var lineInfoFuture = Future(lineInfo)
-
-        that.waitingEmits += 1
-        if(!that.mainTester.timingOut) {
-            that.mainTester.waitingEmits += 1
-        }
 
         var emitData = lineInfoFuture.then(function(lineInfo) {
             var result = lineInfo
