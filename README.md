@@ -77,14 +77,14 @@ var Unit = require('deadunit-core/deadunitCore.browser')
 
 ##### require.js
 ```javascript
-require(['node_modules/browserPackage/deadunitCore.browser.gen.umd'], function(Unit) {
+require(['node_modules/deadunitCore.browser.gen.umd'], function(Unit) {
    // ...
 }
 ```
 
 ##### browser global (the global variable will be 'deaunitCore')
 ```javascript
-<script src='node_modules/browserPackage/deadunitCore.browser.gen.umd'></script>
+<script src='node_modules/deadunitCore.browser.gen.umd'></script>
 ```
 
 `Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object. Returns without having run the tests first - the tests are scheduled to run asynchronously soon thereafter.
@@ -100,6 +100,11 @@ UnitTester
 * `<success>` - a value that the test expects to be true.
 * `<actualValue>` - (optional) the "actual value" being tested. The test results will contain information about the actual value. Example: `this.ok(num === 5, num)`
 * `<expectedValue>` - (optional) the "expected value". The test results will contain information on the expected value. Example: `this.ok(obj.x === 5, obj.x, 5)
+
+`this.eq(<actualValue>, <expectedValue>])` - shorthand for `this.ok(<actualValue> === <expectedValue>, <actualValue>, <expectedValue>).
+
+* `<actualValue>` - the "actual value" being tested. The test results will contain this information about the actual value.
+* `<expectedValue>` - the "expected value". The test results will contain this information on the expected value.
 
 `this.count(<number>)` - Declares that a test contains a certain `<number>` of test groups and asserts (the `ok` method call). Does not count asserts in subtests. This should only be called once per group, and shouldn't be called asynchronously. This is also used to determine when tests are complete. If `count` is not called in a test, that test completes when all of its subtests complete. If `count` is called, then the test completes when the count is reached.
 
@@ -259,7 +264,9 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
-* remove `resolve-url` as a dependency once `source-map-resolver`
+* when stacktrace.js supports asynchronous ajax, upgrade it
+* tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
+* counts are appearing at the end of test results - make their events send in-line to when they're called
 * Look into using https://ci.testling.com/ for browser testing
 * There's already a way to work around dead fibers, but still need to make a way to work around dead futures
   * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
@@ -294,6 +301,11 @@ How to Contribute!
 
 Changelog
 ========
+
+* 5.0.1
+    * fixing sourcemap support for webpack (not sure here if webpack is doing something wrong or if deadunit is)
+    * adding this.eq
+    * removing `resolve-url` as a dependency once `source-map-resolver`
 * 5.0.0
     * Sourcemap support
     * Got rid of `Unit.error`

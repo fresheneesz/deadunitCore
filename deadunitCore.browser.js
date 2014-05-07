@@ -9,7 +9,7 @@ var ajax = require("ajax")
 var resolveSourceMap = Future.wrap(require('source-map-resolve').resolveSourceMap)
 
 var deadunitCore = require("./deadunitCore")
-
+var isRelative = require('./isRelative')
 
 ajax.setSynchronous(true) // todo: REMOVE THIS once this chrome bug is fixed in a public release: https://code.google.com/p/chromium/issues/detail?id=368444
 
@@ -45,11 +45,6 @@ function readFile(url, callback) {
     }).catch(callback).done()
 }
 
-function isRelative(p) {
-    var normal = path.normalize(p);
-    var absolute = path.resolve(p);
-    return normal != absolute;
-}
 
 module.exports = deadunitCore({
     initialize: function() {},

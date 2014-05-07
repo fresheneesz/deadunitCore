@@ -141,7 +141,7 @@ exports.getTests = function(Unit, testEnvironment) {
                         })
                         this.test("'shouldFail' fails correctly", function() {
                             this.ok(5 === 3, 'actual', 'expected')
-                            this.equal(true, false)
+                            this.eq(true, false)
                             this.log("test log")
                             this.count(2)
                         })
@@ -173,7 +173,7 @@ exports.getTests = function(Unit, testEnvironment) {
                     })
                     this.test("SuccessfulTestGroup", function() {
                         this.test("yay", function() {
-                            this.equal(true, true)
+                            this.eq(true, true)
                         })
                     })
 
@@ -248,7 +248,7 @@ exports.getTests = function(Unit, testEnvironment) {
                                         var subtest3line = 140
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 1141
+                                        var subtest3line = 1193
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 
@@ -258,8 +258,6 @@ exports.getTests = function(Unit, testEnvironment) {
                                 this.ok(subtest2.name === "'shouldFail' fails correctly", subtest2.name)
                                 this.ok(subtest2.exceptions.length === 0)
                                 this.ok(subtest2.results.length === 4, subtest2.results.length)
-
-
 
                                     subtest3 = subtest2.results[0]
                                     this.ok(subtest3.success === false)
@@ -750,12 +748,14 @@ exports.getTests = function(Unit, testEnvironment) {
             })
 
             t.test('sourcemap', function(t) {
-                this.count(9)
+                this.count(19)
                 this.timeout(2000)
 
                 var unittest = Unit.test(function() {
                     this.test('coffeescript file', global.sourceMapTest)
                     this.test('inline source map file', global.sourceMapTest2)
+                    this.test('sourcemap file not found', global.sourceMapTest4)
+                    this.test('original file not found', global.sourceMapTest5)
                 }).events({
                     end: function(e) {
                         var results = unittest.results()
@@ -772,6 +772,20 @@ exports.getTests = function(Unit, testEnvironment) {
 
                         t.ok(results.results[1].results[0].line === 5) // IMPORTANT NOTE: the line *should* be 4, but looks like browserify messed this one up
                         t.ok(results.results[1].results[0].sourceLines === 'this.ok(true)')
+
+                        t.ok(results.results[2].results[0].line === 6)
+                        t.ok(results.results[2].results[0].sourceLines === 'this.ok(true)')
+                        t.ok(results.results[2].exceptions.length === 1)
+                        t.ok(results.results[2].exceptions[0].message === "deadlink sourcemap path error")
+                        t.ok(results.results[2].exceptions[0].stack.match(/sourceMapTest4 \(.*deadlinkSourcemapPath.umd.js:7(:[0-9]+)?\)/) !== null, results.results[2].exceptions[0].stack)
+                        t.log(results.results[2].exceptions[0])
+
+                        t.ok(results.results[3].results[0].line === 6)
+                        t.ok(results.results[3].results[0].sourceLines === 'this.ok(true)')
+                        t.ok(results.results[3].exceptions.length === 1)
+                        t.ok(results.results[3].exceptions[0].message === "deadlink source original error")
+                        t.ok(results.results[3].exceptions[0].stack.match(/sourceMapTest5 \(.*deadlinkSourceOriginal.umd.js:7(:[0-9]+)?\)/) !== null, results.results[3].exceptions[0].stack)
+                        t.log(results.results[3].exceptions[0])
                     }
                 })
             })
@@ -794,7 +808,7 @@ exports.getTests = function(Unit, testEnvironment) {
                         end: function(e) {
                             var results = unittest.results()
 
-                            t.ok(results.exceptions.length === 1, results.exceptions.length)
+                            t.ok(results.exceptions.length === 1, results.exceptions)
                             if(testEnvironment === 'node') {
                                 t.ok(results.exceptions[0].message === "Don't break!")
                             } else {

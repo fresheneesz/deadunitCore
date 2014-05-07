@@ -5,6 +5,9 @@
 <!-- These are for the source map test (and they MUST be loaded before require.js-->
 <script src='test/sourceMapTest.js'></script>
 <script src='test/inlineSourceMapTest.browserified.umd.js'></script>
+<script src='test/generated/webpackTest.js.bundle.js'></script>
+<script src='test/deadlinkSourcemapPath.umd.js'></script>
+<script src='test/deadlinkSourceOriginal.umd.js'></script>
 
 <script src='node_modules/requirejs/require.js'></script>
 
@@ -12,16 +15,18 @@
     "use strict";
     require.config({
         paths: {
-            "deadunitCore": "browserPackage/deadunitCore.browser.gen.umd",
-            "deadunitTests": "test/deadunitTests.browser.umd",
+            "deadunitCore": "deadunitCore.browser.umd",
+            "deadunitTests": "test/deadunitTests.browser.umd", // load this instead of requiring it in deadunitTests because this is a test of that bundle
             "deadunit": "node_modules/deadunit/browserPackage/deadunit.browser.gen.umd"
         }
     })
 
+
     require(['deadunit', 'deadunitCore', 'deadunitTests'], function(OldDeadunit, Unit, deadunitTests) {
-        OldDeadunit.test(deadunitTests.name,
-                         deadunitTests.getTests(Unit, 'web', {return: function(){}})
-        ).writeHtml($('body'))
+        OldDeadunit.test(deadunitTests.name, deadunitTests(Unit)).writeHtml($('body'))
     })
 
 </script>
+
+
+

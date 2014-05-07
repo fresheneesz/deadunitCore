@@ -9,6 +9,7 @@ var Future = require('async-future')
 var SourceMapConsumer = require('source-map').SourceMapConsumer
 
 var processResults = require('./processResults')
+var isRelative = require('./isRelative')
 
 // returns a module intended for a specific environment (that environment being described by the options)
 // options can contain:
@@ -365,9 +366,9 @@ module.exports = function(options) {
                 this.doneAsserts += 1
                 afterWaitingEmitIsComplete(this, assert(this, success, actualValue, expectedValue, 'assert', "ok")).done()
             },
-            equal: function(expectedValue, testValue) {
+            eq: function(expectedValue, testValue) {
                 this.doneAsserts += 1
-                afterWaitingEmitIsComplete(this, assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "equal")).done()
+                afterWaitingEmitIsComplete(this, assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "eq")).done()
             },
             count: function(number) {
                 if(this.countExpected !== undefined)
@@ -564,7 +565,19 @@ module.exports = function(options) {
         var fn = sourceMapInfo.name
 
         if(sourceMapInfo.source !== null) {
-            var file = Url.resolve(originalFilePath, path.basename(sourceMapInfo.source))
+            var relative = isRelative(sourceMapInfo.source)
+
+            if(sourceMapConsumer.sourceRoot !== null) {
+                sourceMapInfo.source = sourceMapInfo.source.replace(sourceMapConsumer.sourceRoot, '') // remove sourceRoot (todo: quesion: is this the right thing to do? See https://github.com/webpack/webpack/issues/238)
+            }
+
+            if(relative) {
+                var file = Url.resolve(originalFilePath, path.basename(sourceMapInfo.source))
+            } else {
+                var file = sourceMapInfo.source
+            }
+
+
             var originalFile = true
         } else {
             var file = originalFilePath
