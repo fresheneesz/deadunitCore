@@ -366,9 +366,9 @@ module.exports = function(options) {
                 this.doneAsserts += 1
                 afterWaitingEmitIsComplete(this, assert(this, success, actualValue, expectedValue, 'assert', "ok")).done()
             },
-            eq: function(expectedValue, testValue) {
+            eq: function(actualValue, expectedValue) {
                 this.doneAsserts += 1
-                afterWaitingEmitIsComplete(this, assert(this, expectedValue === testValue, testValue, expectedValue, 'assert', "eq")).done()
+                afterWaitingEmitIsComplete(this, assert(this, expectedValue === actualValue, actualValue, expectedValue, 'assert', "eq")).done()
             },
             count: function(number) {
                 if(this.countExpected !== undefined)

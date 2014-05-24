@@ -302,6 +302,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.2 - fixing annoying bug where eq's expected and got are backwards
 * 5.0.1
     * fixing sourcemap support for webpack (not sure here if webpack is doing something wrong or if deadunit is)
     * adding this.eq
