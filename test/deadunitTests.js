@@ -232,7 +232,10 @@ exports.getTests = function(Unit, testEnvironment) {
                             this.ok(subtest1.exceptions.length === 0)
                             this.ok(subtest1.results.length === 7, subtest1.results.length)
 
-                                var subtest2 = subtest1.results[0]
+                                var subtest2 = subtest1.results[0]     // count
+                                this.ok(subtest2.success === false, subtest2.success)
+
+                                subtest2 = subtest1.results[1]
                                 this.ok(subtest2.type === "group")
                                 this.ok(subtest2.name === "assertSomething")
                                 this.ok(subtest2.exceptions.length === 0)
@@ -248,53 +251,53 @@ exports.getTests = function(Unit, testEnvironment) {
                                         var subtest3line = 140
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 1193
+                                        var subtest3line = 1194
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 
                                     //this.ok(subtest3.column === 9, subtest3.column)
 
-                                subtest2 = subtest1.results[1]
+                                subtest2 = subtest1.results[2]
                                 this.ok(subtest2.name === "'shouldFail' fails correctly", subtest2.name)
                                 this.ok(subtest2.exceptions.length === 0)
                                 this.ok(subtest2.results.length === 4, subtest2.results.length)
 
-                                    subtest3 = subtest2.results[0]
+                                    subtest3 = subtest2.results[0]      // count
+                                    this.ok(subtest3.type === "assert", subtest3.type)
+                                    this.ok(subtest3.success === true, subtest3.success)
+
+                                    subtest3 = subtest2.results[1]
                                     this.ok(subtest3.success === false)
                                     this.ok(subtest3.sourceLines.indexOf("5 === 3") !== -1)
                                     this.ok(subtest3.actual === 'actual')
                                     this.ok(subtest3.expected === 'expected')
 
-                                    subtest3 = subtest2.results[1]
+                                    subtest3 = subtest2.results[2]
                                     this.ok(subtest3.success === false)
                                     this.ok(subtest3.sourceLines.indexOf("true, false") !== -1)
                                     this.ok(subtest3.file === testFileName)
                                     this.ok(subtest3.line === subtest3line+4, subtest3.line)
                                     //this.ok(subtest3.column === 9, subtest3.column)
 
-                                    subtest3 = subtest2.results[2]
+                                    subtest3 = subtest2.results[3]
                                     this.ok(subtest3.type === "log")
                                     this.ok(subtest3.values.length === 1)
                                     this.ok(subtest3.values[0] === "test log")
 
-                                    subtest3 = subtest2.results[3]      // count
-                                    this.ok(subtest3.type === "assert", subtest3.type)
-                                    this.ok(subtest3.success === true, subtest3.success)
-
-                                subtest2 = subtest1.results[2]
+                                subtest2 = subtest1.results[3]
                                 this.ok(subtest2.name === "shouldThrowException")
                                 this.ok(subtest2.exceptions.length === 1)
                                 this.ok(subtest2.exceptions[0].message === "Ahhhhh!")
 
                                 this.ok(subtest2.results.length === 2, subtest2.results.length)
 
-                                    subtest3 = subtest2.results[0]
+                                    subtest3 = subtest2.results[0]     // count
                                     this.ok(subtest3.success === true)
 
-                                    subtest3 = subtest2.results[1]     // count
+                                    subtest3 = subtest2.results[1]
                                     this.ok(subtest3.success === true)
 
-                                subtest2 = subtest1.results[3]
+                                subtest2 = subtest1.results[4]
                                 this.ok(subtest2.name === "should throw an asynchronous exception")
                                 if(testEnvironment === 'node') {
                                     this.ok(subtest2.exceptions.length === 1)
@@ -307,17 +310,15 @@ exports.getTests = function(Unit, testEnvironment) {
 
                                 this.ok(subtest2.results.length === 2, subtest2.results.length)
 
-                                this.ok(subtest1.results[4].type === 'log', subtest1.results[4].type) // log
-                                this.ok(subtest1.results[4].values[0] === 'subtest without a name')
-
                                 subtest2 = subtest1.results[5]
+                                this.ok(subtest2.type === 'log', subtest2.type) // log
+                                this.ok(subtest2.values[0] === 'subtest without a name')
+
+                                subtest2 = subtest1.results[6]
                                 this.ok(subtest2.name === undefined)
                                 this.ok(subtest2.exceptions.length === 0)
                                 this.ok(subtest2.results.length === 1)
                                 this.ok(subtest2.results[0].success === true)
-
-                                subtest2 = subtest1.results[6]     // count
-                                this.ok(subtest2.success === false, subtest2.success)
                         })
 
                         this.test("Verify 'SuccessfulTestGroup'", function() {
@@ -432,10 +433,10 @@ exports.getTests = function(Unit, testEnvironment) {
                         t.ok(results.timeout === false, results.timeout)
                         t.ok(results.duration >= 200, results.duration)
                         t.ok(results.results.length === 3, results.results.length)
-                        t.ok(results.results[0].results.length === 2)
-                        t.ok(results.results[0].results[0].success === true)
-                        t.ok(results.results[0].duration >= 200, require('util').inspect(results.results[0]))
-                        t.ok(results.results[1].success === true)
+                        t.ok(results.results[0].success === true)  // count
+                        t.ok(results.results[1].results.length === 2)
+                        t.ok(results.results[1].results[0].success === true)
+                        t.ok(results.results[1].duration >= 200, require('util').inspect(results.results[0]))
 
                     }).catch(function(e) {
                         t.ok(false, e)
@@ -449,14 +450,16 @@ exports.getTests = function(Unit, testEnvironment) {
                 var results = test.results()
 
                 t.ok(results.results.length === 3, results.results.length)
-                t.ok(results.results[2].actual === 2 && results.results[2].success === true, require('util').inspect(results.results[2]))
-                var subtest1 = results.results[0]
-                t.ok(subtest1.results[2].actual === 2 && subtest1.results[2].success === true, require('util').inspect(subtest1.results[2]))
-                t.ok(subtest1.results.length === 3, subtest1.results.length)
-                var subtest2 = subtest1.results[0]
-                t.ok(subtest2.results.length === 2, subtest2.results.length)
-                t.ok(subtest2.results[1].actual === 1
-                    && subtest2.results[1].success === true, require('util').inspect(subtest2.results[1]))
+                t.ok(results.results[0].actual === 2 && results.results[2].success === true, require('util').inspect(results.results[2]))
+                var subtest1 = results.results[1]
+                    var subtest1Count = subtest1.results[0]
+                    t.ok(subtest1Count.actual === 2 && subtest1Count.success === true, require('util').inspect(subtest1Count))
+                    t.ok(subtest1.results.length === 3, subtest1.results.length)
+                    var subtest2 = subtest1.results[1]
+                        var subtest2Count = subtest2.results[0]
+                        t.ok(subtest2.results.length === 2, subtest2.results.length)
+                        t.ok(subtest2Count.actual === 1
+                            && subtest2Count.success === true, require('util').inspect(subtest2Count))
             }
 
             t.test("counts", function(t) {

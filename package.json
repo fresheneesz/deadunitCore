@@ -3,7 +3,7 @@
  "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
  "version":"5.0.2",
  "dependencies":{
-	 "async-future":"0.1.18",
+	 "async-future":"1.0.0",
      "stack-trace":"0.0.7",
      "stackinfo":"1.1.2",
      "proto":"1.0.9",

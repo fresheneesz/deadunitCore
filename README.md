@@ -302,6 +302,10 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.3
+    * fixing time calculating issue
+    * moving counts to the top of the results for each group
+    * pulling in new version of futures for a major performance improvement
 * 5.0.2 - fixing annoying bug where eq's expected and got are backwards
 * 5.0.1
     * fixing sourcemap support for webpack (not sure here if webpack is doing something wrong or if deadunit is)

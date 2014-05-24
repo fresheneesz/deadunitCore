@@ -67,16 +67,18 @@ var mainTest = OldDeadunit.test(tests.name, function(t) {
 
                     t.ok(results.results.length === 3, results.results.length)
 
-                    t.ok(results.results[0].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
-                    t.ok(results.results[0].results.length === 1, results.results[0].results.length)
-                    t.ok(results.results[0].results[0].success === true)
-                    t.ok(results.results[0].duration !== undefined, results.results[0].duration)
-                    t.ok(results.results[0].duration >= 0, results.results[0].duration)
+                    var subtest1 = results.results[1]
+                    t.ok(subtest1.exceptions.length === 0, require('util').inspect(subtest1.exceptions))
+                    t.ok(subtest1.results.length === 1, subtest1.results.length)
+                    t.ok(subtest1.results[0].success === true)
+                    t.ok(subtest1.duration !== undefined, subtest1.duration)
+                    t.ok(subtest1.duration >= 0, results.results[0].duration)
 
-                    t.ok(results.results[1].exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
-                    t.ok(results.results[1].results.length === 0)
-                    t.ok(results.results[1].duration !== undefined, results.results[1].duration)
-                    t.ok(results.results[1].duration >= 0, results.results[1].duration)
+                    subtest1 = results.results[2]
+                    t.ok(subtest1.exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
+                    t.ok(subtest1.results.length === 0)
+                    t.ok(subtest1.duration !== undefined, subtest1.duration)
+                    t.ok(subtest1.duration >= 0, subtest1.duration)
                 }).done()
             }})
         })

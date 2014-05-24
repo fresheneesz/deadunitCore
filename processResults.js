@@ -70,6 +70,7 @@ module.exports = function returnResults(unitTestObject) {
         },
         end: function(e) {
             primaryGroup.timeout = e.type === 'timeout'
+            setGroupDuration(primaryGroup.id, e.time)
 
             // make the count assertions
             eachTest(primaryGroup, function(subtest, parenttest) {
@@ -82,7 +83,7 @@ module.exports = function returnResults(unitTestObject) {
                             actualCount++
                     })
 
-                    subtest.results.push({
+                    subtest.results.splice(0,0,{
                         parent: subtest.id,
                         type: 'assert',
                         success: actualCount === info.expected,
@@ -102,7 +103,11 @@ module.exports = function returnResults(unitTestObject) {
     })
 
     function setGroupDuration(groupid, time) {
-        groups[groupid].duration = time - groups[groupid].time
+        var newDuration = time - groups[groupid].time
+        if(newDuration > groups[groupid].duration) {
+            groups[groupid].duration = newDuration
+        }
+
         if(groups[groupid].parent) {
             setGroupDuration(groups[groupid].parent, time)
         }
