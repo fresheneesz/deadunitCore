@@ -216,6 +216,18 @@ module.exports = function(options) {
 
     function createUnhandledErrorHandler(tester) {
 
+        var handleErrorInErrorHandler = function(warn, newError) {
+            if(warn !== false) {
+                try {
+                    tester.warningHandler(newError)
+                } catch(warningHandlerError) {
+                    tester.manager.emit('exception', Future(warningHandlerError)).done() // if shit gets this bad, that sucks
+                }
+            } else {
+                console.error(newError)
+            }
+        }
+
         // warn should be set to false if the handler is being called to report a warning
         return function(e, warn) {
             if(tester.unhandledErrorHandler !== undefined) {
@@ -224,20 +236,14 @@ module.exports = function(options) {
                     return Future(undefined)
 
                 } catch(newError) {     // error handler had an error...
-                    if(warn !== false) {
-                        try {
-                            tester.warningHandler(newError)
-                        } catch(warningHandlerError) {
-                            tester.manager.emit('exception', Future(warningHandlerError)).done() // if shit gets this bad, that sucks
-                        }
-                    }
+                    handleErrorInErrorHandler(warn, newError)
                 }
             }
             // else
 
             var errorToEmit = mapException(e, tester.warningHandler).catch(function(newError) {
                 if(newError.message !== "Accessing the 'caller' property of a function or arguments object is not allowed in strict mode") { // stacktrace.js doesn't support IE for certain things
-                    tester.warningHandler(newError)
+                    handleErrorInErrorHandler(warn, newError)
                 }
                 return Future(e) // use the original unmapped exception
 
@@ -634,17 +640,22 @@ module.exports = function(options) {
     var sourceMapConsumerCache = {} // a map from a script url to a future of its SourceMapConsumer object (null means no sourcemap exists)
     function getSourceMapConsumer(url, warningHandler) {
         if(sourceMapConsumerCache[url] === undefined) {
-            sourceMapConsumerCache[url] = options.getSourceMapObject(url, warningHandler).then(function(sourceMapObject) {
-                if(sourceMapObject !== undefined) {
-                    if(sourceMapObject.version === undefined) {
-                        warningHandler(new Error("Sourcemap for "+url+" doesn't contain the required 'version' property. Assuming version 2."))
-                        sourceMapObject.version = 2 // assume version 2 to make browserify's broken sourcemap format that omits the version
+            try {
+                sourceMapConsumerCache[url] = options.getSourceMapObject(url, warningHandler).then(function(sourceMapObject) {
+                    if(sourceMapObject !== undefined) {
+                        if(sourceMapObject.version === undefined) {
+                            warningHandler(new Error("Sourcemap for "+url+" doesn't contain the required 'version' property. Assuming version 2."))
+                            sourceMapObject.version = 2 // assume version 2 to make browserify's broken sourcemap format that omits the version
+                        }
+                        return Future(new SourceMapConsumer(sourceMapObject))
+                    } else {
+                        return Future(undefined)
                     }
-                    return Future(new SourceMapConsumer(sourceMapObject))
-                } else {
-                    return Future(undefined)
-                }
-            })
+                })
+            } catch(e) {
+                sourceMapConsumerCache[url] = Future(undefined)
+                warningHandler(e)
+            }
         }
 
         return sourceMapConsumerCache[url]

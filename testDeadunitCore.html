@@ -21,7 +21,6 @@
         }
     })
 
-
     require(['deadunit', 'deadunitCore', 'deadunitTests'], function(OldDeadunit, Unit, deadunitTests) {
         OldDeadunit.test(deadunitTests.name, deadunitTests(Unit)).writeHtml($('body'))
     })

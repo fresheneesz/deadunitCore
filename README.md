@@ -266,8 +266,8 @@ To Do
 
 * when stacktrace.js supports asynchronous ajax, upgrade it
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
-* counts are appearing at the end of test results - make their events send in-line to when they're called
 * Look into using https://ci.testling.com/ for browser testing
+* when chrome bug https://code.google.com/p/chromium/issues/detail?id=368444 is fixed, set ajax back to asynchronous
 * There's already a way to work around dead fibers, but still need to make a way to work around dead futures
   * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
     * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)
@@ -302,6 +302,9 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.4
+    * fixing memory leak that happened in certain rare error conditions
+    * updating ajax for better error handling
 * 5.0.3
     * fixing time calculating issue
     * moving counts to the top of the results for each group
