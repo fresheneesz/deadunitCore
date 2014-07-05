@@ -529,6 +529,8 @@ module.exports = function(options) {
     function getLineInformation(functionName, stackIncrease, doSourcemappery, warningHandler) {
         var info = options.getLineInfo(stackIncrease)
 
+        var file, line, column;
+
         return getSourceMapConsumer(info.file, warningHandler).catch(function(e){
             warningHandler(e)
             return Future(undefined)
@@ -537,27 +539,28 @@ module.exports = function(options) {
             if(sourceMapConsumer !== undefined && doSourcemappery) {
 
                 var mappedInfo = getMappedSourceInfo(sourceMapConsumer, info.file, info.line, info.column)
-                var file = mappedInfo.file
-                var line = mappedInfo.line
-                var column = mappedInfo.column
+                file = mappedInfo.file
+                line = mappedInfo.line
+                column = mappedInfo.column
 
                 var multiLineSearch = !mappedInfo.usingOriginalFile // don't to a multi-line search if the source has been mapped (the file might not be javascript)
-                var sourceLines = getFunctionCallLines(mappedInfo.file, functionName, mappedInfo.line, multiLineSearch, warningHandler)
+                return getFunctionCallLines(mappedInfo.file, functionName, mappedInfo.line, multiLineSearch, warningHandler)
 
             } else {
-                var file = info.file
-                var line = info.line
-                var column = info.column
-                var sourceLines = getFunctionCallLines(file, functionName, line, true, warningHandler)
+                file = info.file
+                line = info.line
+                column = info.column
+                return getFunctionCallLines(file, functionName, line, true, warningHandler)
             }
-
-            return sourceLines.then(function(sourceLines) {
-                return Future({
-                    sourceLines: sourceLines,
-                    file: path.basename(file),
-                    line: line,
-                    column: column
-                })
+        }).catch(function(e) {
+            warningHandler(e)
+            return Future("<source not available>")
+        }).then(function(sourceLines) {
+            return Future({
+                sourceLines: sourceLines,
+                file: path.basename(file),
+                line: line,
+                column: column
             })
         })
     }
@@ -603,7 +606,7 @@ module.exports = function(options) {
 
         return {
             file: file,
-            fn: fn,
+            function: fn,
             line: line,
             column: column,
             usingOriginalFile: originalFile
@@ -634,6 +637,7 @@ module.exports = function(options) {
             }
             // else
             return Future("<source not available>")
+
         })
     }
 
@@ -718,7 +722,7 @@ module.exports = function(options) {
             for(var n=0; n<traceInfo.length; n++) {
                 var info = traceInfo[n]
                 if(sourceMapConsumers[n] !== undefined) {
-                    info = getMappedSourceInfo(sourceMapConsumers[n], info.file, info.line, info.column, info.fn)
+                    info = getMappedSourceInfo(sourceMapConsumers[n], info.file, info.line, info.column, info.function)
                 }
 
                 var fileLineColumn = info.line
@@ -730,8 +734,8 @@ module.exports = function(options) {
                 }
 
                 var traceLine = "    at "
-                if(info.fn !== undefined) {
-                    traceLine += info.fn+' ('+fileLineColumn+')'
+                if(info.function !== undefined) {
+                    traceLine += info.function+' ('+fileLineColumn+')'
                 } else {
                     traceLine += fileLineColumn
                 }

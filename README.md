@@ -101,7 +101,7 @@ UnitTester
 * `<actualValue>` - (optional) the "actual value" being tested. The test results will contain information about the actual value. Example: `this.ok(num === 5, num)`
 * `<expectedValue>` - (optional) the "expected value". The test results will contain information on the expected value. Example: `this.ok(obj.x === 5, obj.x, 5)
 
-`this.eq(<actualValue>, <expectedValue>])` - shorthand for `this.ok(<actualValue> === <expectedValue>, <actualValue>, <expectedValue>).
+`this.eq(<actualValue>, <expectedValue>])` - shorthand for `this.ok(<actualValue> === <expectedValue>, <actualValue>, <expectedValue>)`.
 
 * `<actualValue>` - the "actual value" being tested. The test results will contain this information about the actual value.
 * `<expectedValue>` - the "expected value". The test results will contain this information on the expected value.
@@ -302,6 +302,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.5 - updating stackinfo to support sourcemapping for newer versions of firefox (that have a new stacktrace format)
 * 5.0.4
     * fixing memory leak that happened in certain rare error conditions
     * updating ajax for better error handling

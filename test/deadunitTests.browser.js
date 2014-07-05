@@ -20,6 +20,7 @@ module.exports = function(Unit) {
             }
         })
 
+
         //*
         this.test('browser-specific tests', function() {
 
@@ -94,7 +95,7 @@ module.exports = function(Unit) {
                         f2.return()
                     }
                 })
-                    //*/
+                    //*/ /*
             })
 
         })
@@ -102,6 +103,6 @@ module.exports = function(Unit) {
         Future.all(browserSpecificFutures).then(function() {
             t.test("common tests", tests.getTests(Unit, 'web', {return: function(){}}))
         })
-        //Z*/
+        //*/
     }
 }
