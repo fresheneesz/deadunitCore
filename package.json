@@ -1,7 +1,7 @@
 {"name":"deadunit-core",
  "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript in node.js and the browser.",
  "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
- "version":"5.0.7",
+ "version":"5.0.8",
  "dependencies":{
 	 "async-future":"1.0.0",
      "stack-trace":"0.0.7",
@@ -13,7 +13,7 @@
      "colors":"https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz"
  },
  "devDependencies": {
-    "deadunit":"5.1.1",
+    "deadunit":"5.1.2",
     "fibers":"",
     "requirejs":"",
     "browserify": "",

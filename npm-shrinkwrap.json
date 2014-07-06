@@ -1,6 +1,6 @@
 {
   "name": "deadunit-core",
-  "version": "5.0.5",
+  "version": "5.0.7",
   "dependencies": {
     "ajax": {
       "version": "1.0.3",
