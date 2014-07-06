@@ -302,6 +302,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.7 - updating core for some error handling improvements
 * 5.0.6
     * ensuring that the end event is only called once the test threadlet (e.g. a setTimeout callback) has finished
     * trying to mitigate "too much recursion" errors by using setTimeout
