@@ -13,7 +13,7 @@
      "colors":"https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz"
  },
  "devDependencies": {
-    "deadunit":"5.0.0",
+    "deadunit":"5.1.1",
     "fibers":"",
     "requirejs":"",
     "browserify": "",

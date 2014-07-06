@@ -302,6 +302,9 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.6
+    * ensuring that the end event is only called once the test threadlet (e.g. a setTimeout callback) has finished
+    * trying to mitigate "too much recursion" errors by using setTimeout
 * 5.0.5 - updating stackinfo to support sourcemapping for newer versions of firefox (that have a new stacktrace format)
 * 5.0.4
     * fixing memory leak that happened in certain rare error conditions

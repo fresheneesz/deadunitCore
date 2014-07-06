@@ -155,7 +155,7 @@ module.exports = deadunitCore({
             var infoElement = info[n]
 
             var result = {
-                fn: infoElement.getFunctionName(),
+                function: infoElement.getFunctionName(),
                 file: infoElement.getFileName(),
                 line: infoElement.getLineNumber(),
                 column: infoElement.getColumnNumber()
