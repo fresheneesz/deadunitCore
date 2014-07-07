@@ -249,10 +249,10 @@ exports.getTests = function(Unit, testEnvironment) {
                                     this.ok(subtest3.file === testFileName)
 
                                     if(testEnvironment === 'node') {
-                                        var subtest3line = 140
+                                        var subtest3line = 141
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 7887
+                                        var subtest3line = 7894
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 

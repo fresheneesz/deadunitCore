@@ -50,7 +50,7 @@ module.exports = function(Unit) {
             // note: this test used to cause a stack loop that crashed chrome and blew firefoxes memory usage way up (probably until it'd crash too)
             this.test('ajax failure', function(t) {
                 this.count(4)
-                   //*
+
                 var FailUnit = require('./deadunitCore.browserAjaxFailure')
 
                 var f = new Future; browserSpecificFutures.push(f)
@@ -72,8 +72,7 @@ module.exports = function(Unit) {
                         f.return()
                     }
                 })
-                 //*/
-                  //*
+
                 var FailUnit2 = require('./deadunitCore.browserAjaxThrow')
 
                 var f2 = new Future; browserSpecificFutures.push(f2)
@@ -95,13 +94,11 @@ module.exports = function(Unit) {
                         f2.return()
                     }
                 })
-                    //*/ /*
+
             })
 
         })
 
-
-         //*
         Future.all(browserSpecificFutures).then(function() {
             t.test("common tests", tests.getTests(Unit, 'web', {return: function(){}}))
         })

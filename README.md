@@ -302,6 +302,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.9 - fixing too much recursion issue in the tests (affected firefox)
 * 5.0.8 - attempting to fix some bugs in the last commit
 * 5.0.7 - adding bundle that was left out of last commit
 * 5.0.6
