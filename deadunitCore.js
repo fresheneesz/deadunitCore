@@ -167,7 +167,7 @@ module.exports = function(options) {
             }
 
             this.emitDepth++
-            if(this.emitDepth % 50 === 0) {
+            if(this.emitDepth % 40 === 0) { // 40 seems to be the magic number here for firefox - such a finicky browser
                 that.lastEmitFuture = doStuff(new Future)
             } else {
                 that.lastEmitFuture = doStuff()

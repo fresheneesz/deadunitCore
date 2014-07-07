@@ -6,6 +6,7 @@ var tests = require("./deadunitTests")
 module.exports = function(Unit, testEnvironment) {
     return function(t) {
         this.count(2)
+        this.timeout(15*1000)
         var browserSpecificFutures = []
 
         var expectedExceptions = 10

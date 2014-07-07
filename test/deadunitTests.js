@@ -38,46 +38,7 @@ exports.getTests = function(Unit, testEnvironment) {
             }
         }
 
-        var simpleAsyncExceptionFutureDone = new Future
-            t.test('simple async exception', function(t) {
-                this.count(4)
-
-                var simpleAsyncExceptionFuture = new Future
-                var simpleAsyncExceptionTest = Unit.test(function(t) {
-                    catchWarningsIfNeccessary(this)
-                    this.count(1)
-                    setTimeout(function() {
-                        setTimeout(function() {
-                            t.ok(true) // to prevent it from timing out
-                            simpleAsyncExceptionFuture.return()
-                        }, 0)
-                        throw Error("Async")
-                    }, 0)
-                }).events({
-                    end: function() {
-                        simpleAsyncExceptionFuture.then(function() {
-                            var test = simpleAsyncExceptionTest.results()
-
-                            t.ok(test.name === undefined)
-                            t.ok(test.exceptions.length === 1)
-                            if(testEnvironment === 'node') {
-                                t.ok(test.exceptions[0].message === 'Async')
-                            } else {
-                                t.ok(
-                                    test.exceptions[0].message.indexOf('Uncaught error in') === 0
-                                    && test.exceptions[0].message.indexOf('Async') !== -1
-                                    && test.exceptions[0].message.indexOf('deadunitTests.browser.umd.js') !== -1
-                                )
-                            }
-                            t.ok(test.timeout === false)
-
-                            simpleAsyncExceptionFutureDone.return()
-                        }).done()
-                    }
-                })
-            })
-
-        /*
+        //*
         this.test('simple success', function(t) {
             this.count(3)
             var test = Unit.test(function() {
@@ -297,10 +258,10 @@ exports.getTests = function(Unit, testEnvironment) {
                                     this.ok(subtest3.file === testFileName)
 
                                     if(testEnvironment === 'node') {
-                                        var subtest3line = 141
+                                        var subtest3line = 150
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 7894
+                                        var subtest3line = 7920
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 
@@ -722,6 +683,7 @@ exports.getTests = function(Unit, testEnvironment) {
                 var endSequence = sequence()
 
                 Unit.test('one', function() {
+                    this.timeout(9000) // because ie is slow
                     this.log("string")
                     this.ok(false, "string")
                     this.ok(true)
@@ -844,7 +806,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
 
             t.test('former bugs', function() {
-                this.count(2)
+                this.count(3)
 
                 this.test('deadunit would crash if an asynchronous error was thrown in the top-level main test', function(t) {
                     this.count(2)
@@ -892,6 +854,23 @@ exports.getTests = function(Unit, testEnvironment) {
                             t.ok(squashedSourceLines === "this.ok(\ntrue\n)", squashedSourceLines)
                             t.ok(results.results[1].sourceLines.replace(/ /g, '') === "this.ok(\n(true)\n)")
                             t.ok(results.results[2].sourceLines.replace(/ /g, '') === 'this.ok(\n")"===")"\n)', results.results[2].sourceLines.replace(/ /g, ''))
+                        }
+                    })
+                })
+
+                // note: I couldn't get this to cause too much recursion in node.js no matter how high I set maxN
+                    // but it manifested in Chrome as a crash and Firefox as a "too much recursion" error
+                this.test('too much recursion / EMFILE issue', function(t) {
+                    this.count(1)
+                    var maxN = 1000
+                    var unittest = Unit.test(function() {
+                        for(var n=0; n<maxN; n++) {
+                            this.ok(true)
+                        }
+                    }).events({
+                        end: function(e) {
+                            var results = unittest.results()
+                            t.eq(results.results.length, maxN)
                         }
                     })
                 })

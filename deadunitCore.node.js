@@ -12,11 +12,15 @@ var color = require('colors/safe')
 
 var deadunitCore = require("./deadunitCore")
 
+var readFileCache = {}
 var nodeReadFile = Future.wrap(fs.readFile)
 var readFile = function(filePath) {
-    return nodeReadFile(filePath).then(function(fileBuffer) {
-        return Future(fileBuffer.toString())
-    })
+    if(readFileCache[filePath] === undefined) {
+        readFileCache[filePath] = nodeReadFile(filePath).then(function(fileBuffer) {
+            return Future(fileBuffer.toString())
+        })
+    }
+    return readFileCache[filePath]
 }
 var exists = function(filePath) {
     var existsFuture = new Future

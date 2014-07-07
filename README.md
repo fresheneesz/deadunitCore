@@ -305,6 +305,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.10 - upgrading async futures, adding test case for the recursion issue, and bolstering "too much recursion" avoidance
 * 5.0.9 - fixing too much recursion issue in the tests (affected firefox)
 * 5.0.8 - attempting to fix some bugs in the last commit
 * 5.0.7 - adding bundle that was left out of last commit
