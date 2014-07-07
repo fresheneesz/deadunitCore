@@ -3,10 +3,9 @@ var Future = require('async-future')
 
 var tests = require("./deadunitTests")
 
-module.exports = function(Unit) {
+module.exports = function(Unit, testEnvironment) {
     return function(t) {
-        //this.count(2)
-        //this.timeout(10 * 1000)
+        this.count(2)
         var browserSpecificFutures = []
 
         var expectedExceptions = 10
@@ -24,30 +23,32 @@ module.exports = function(Unit) {
         //*
         this.test('browser-specific tests', function() {
 
-            this.test('sourcemap', function(t) {
-                this.count(5)
-                this.timeout(2000)
+            if(testEnvironment === 'web') {
+                this.test('sourcemap', function(t) {
+                    this.count(5)
+                    this.timeout(2000)
 
-                var f = new Future; browserSpecificFutures.push(f)
-                var unittest = Unit.test(function() {
-                    this.test('webpack source map file', window.sourceMapTest3)
-                }).events({
-                    end: function(e) {
-                        var results = unittest.results()
+                    var f = new Future; browserSpecificFutures.push(f)
+                    var unittest = Unit.test(function() {
+                        this.test('webpack source map file', window.sourceMapTest3)
+                    }).events({
+                        end: function(e) {
+                            var results = unittest.results()
 
-                        t.ok(results.results[0].results[0].line === 4)
-                        t.ok(results.results[0].results[0].sourceLines === 'this.ok(true)')
-                        t.ok(results.results[0].exceptions.length === 1)
-                        t.ok(results.results[0].exceptions[0].message === "webpack bundle error")
-                        t.ok(results.results[0].exceptions[0].stack.match(/sourceMapTest3 \(.*webpackTest.js:5(:[0-9]+)?\)/) !== null, results.results[0].exceptions[0].stack)
-                        t.log(results.results[0].exceptions[0])
+                            t.ok(results.results[0].results[0].line === 4)
+                            t.ok(results.results[0].results[0].sourceLines === 'this.ok(true)')
+                            t.ok(results.results[0].exceptions.length === 1)
+                            t.ok(results.results[0].exceptions[0].message === "webpack bundle error")
+                            t.ok(results.results[0].exceptions[0].stack.match(/sourceMapTest3 \(.*webpackTest.js:5(:[0-9]+)?\)/) !== null, results.results[0].exceptions[0].stack)
+                            t.log(results.results[0].exceptions[0])
 
-                        f.return()
-                    }
+                            f.return()
+                        }
+                    })
                 })
-            })
+            }
 
-            // note: this test used to cause a stack loop that crashed chrome and blew firefoxes memory usage way up (probably until it'd crash too)
+            // note: this test used to cause a stack loop that crashed chrome and blew firefox's memory usage way up (probably until it'd crash too)
             this.test('ajax failure', function(t) {
                 this.count(4)
 
@@ -100,7 +101,7 @@ module.exports = function(Unit) {
         })
 
         Future.all(browserSpecificFutures).then(function() {
-            t.test("common tests", tests.getTests(Unit, 'web', {return: function(){}}))
+            t.test("common tests", tests.getTests(Unit, testEnvironment, {return: function(){}}))
         })
         //*/
     }

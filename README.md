@@ -118,7 +118,9 @@ UnitTester
 
 `this.after(<function>)` - Runs the passed `<function>` once after each subtest in the test.
 
-`this.error(<function>)` - Overrides the unhandled exception handler (that catches errors and records them in the test results) specifically for unhandled errors that happen inside `this` test (not child tests). Unhandled exceptions will come through this function *instead* of being recorded in the test results.
+`this.error(<function(e)>)` - Overrides the unhandled exception handler (that catches errors and records them in the test results) specifically for unhandled errors that happen inside `this` test (not child tests). Unhandled exceptions will come through this function *instead* of being recorded in the test results.
+
+`this.warning(<function(e)>)` - Overrides the warning handler (which takes an exception as its parameter). Warning exceptions will come through this function *instead* of being recorded in the test results.
 
 `this.sourcemap(<enable>)` - enables (`true`) or disables (`false`) source mapping of printed exceptions with a given test. Source mapping of exceptions is enabled by default.
 
@@ -264,6 +266,7 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
+* finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * when stacktrace.js supports asynchronous ajax, upgrade it
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
 * Look into using https://ci.testling.com/ for browser testing

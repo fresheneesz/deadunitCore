@@ -6,7 +6,7 @@ exports.name = "Unit test the unit test-results (these should all succeed)"
 
 exports.getTests = function(Unit, testEnvironment) {
 
-    if(testEnvironment === 'web') {
+    if(testEnvironment === 'web' || testEnvironment === 'web_fileProtocol') {
         var testFileName = "deadunitTests.browser.umd.js"
 
     } else if(testEnvironment === 'node') {
@@ -30,8 +30,54 @@ exports.getTests = function(Unit, testEnvironment) {
             errorCount++
         })
 
+        function catchWarningsIfNeccessary(that) {
+            if(testEnvironment === 'web_fileProtocol') {
+                that.warning(function(e) {
+                    console.log(e.message)
+                })
+            }
+        }
 
-        //*
+        var simpleAsyncExceptionFutureDone = new Future
+            t.test('simple async exception', function(t) {
+                this.count(4)
+
+                var simpleAsyncExceptionFuture = new Future
+                var simpleAsyncExceptionTest = Unit.test(function(t) {
+                    catchWarningsIfNeccessary(this)
+                    this.count(1)
+                    setTimeout(function() {
+                        setTimeout(function() {
+                            t.ok(true) // to prevent it from timing out
+                            simpleAsyncExceptionFuture.return()
+                        }, 0)
+                        throw Error("Async")
+                    }, 0)
+                }).events({
+                    end: function() {
+                        simpleAsyncExceptionFuture.then(function() {
+                            var test = simpleAsyncExceptionTest.results()
+
+                            t.ok(test.name === undefined)
+                            t.ok(test.exceptions.length === 1)
+                            if(testEnvironment === 'node') {
+                                t.ok(test.exceptions[0].message === 'Async')
+                            } else {
+                                t.ok(
+                                    test.exceptions[0].message.indexOf('Uncaught error in') === 0
+                                    && test.exceptions[0].message.indexOf('Async') !== -1
+                                    && test.exceptions[0].message.indexOf('deadunitTests.browser.umd.js') !== -1
+                                )
+                            }
+                            t.ok(test.timeout === false)
+
+                            simpleAsyncExceptionFutureDone.return()
+                        }).done()
+                    }
+                })
+            })
+
+        /*
         this.test('simple success', function(t) {
             this.count(3)
             var test = Unit.test(function() {
@@ -66,6 +112,7 @@ exports.getTests = function(Unit, testEnvironment) {
         this.test('simple exception', function(t) {
             this.count(4)
             var test = Unit.test(function() {
+                catchWarningsIfNeccessary(this)
                 this.count(1)
                 this.timeout(0) // just to make the test end faster
                 throw Error("sync")
@@ -90,6 +137,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
                 var simpleAsyncExceptionFuture = new Future
                 var simpleAsyncExceptionTest = Unit.test(function(t) {
+                    catchWarningsIfNeccessary(this)
                     this.count(1)
                     setTimeout(function() {
                         setTimeout(function() {

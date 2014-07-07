@@ -49,7 +49,7 @@ module.exports = function(options) {
         this.init = function(/*mainName=undefined, groups*/) {
             var that = this
             var args = arguments
-            this.manager = EventManager()
+            this.manager = EventManager(this)
 
             setTimeout(function() {
                 runTest.call(that, args)
@@ -84,7 +84,7 @@ module.exports = function(options) {
                 fakeTest.mainTestState = {get unhandledErrorHandler(){return getUnhandledErrorHandler() || options.defaultTestErrorHandler(fakeTest)}}
 
                 var warningInfoMessageHasBeenOutput = false
-                fakeTest.manager.warningHandler = fakeTest.warningHandler = function(w) {
+                fakeTest.warningHandler = function(w) {
                     var errorHandler = getUnhandledErrorHandler()
                     if(warningInfoMessageHasBeenOutput === false) {
                         var warning = newError("You've received at least one warning. If you don't want to treat warnings as errors, use the `warning` method to redefine how to handle them.")
@@ -118,7 +118,7 @@ module.exports = function(options) {
 
     var EventManager = proto(function() {
 
-        this.init = function() {
+        this.init = function(testObject) {
             this.handlers = {
                 group: [],
                 assert: [],
@@ -136,9 +136,10 @@ module.exports = function(options) {
             this.history = []
             this.emitDepth = 0 // records how many futures are waiting on eachother, so we can make sure maximum stack depth isn't exceeded
             this.lastEmitFuture = Future(undefined)
+            this.testObject = testObject
         }
 
-        this.warningHandler;
+        this.testObject; // used to get the right warningHandler
 
         // emits an event
         // eventDataFuture resolves to either an eventData object, or undefined if nothing should be emitted
@@ -152,7 +153,7 @@ module.exports = function(options) {
                     if(eventData !== undefined)
                         recordAndTriggerHandlers.call(that, type, eventData)
                 }).catch(function(e) {
-                    that.warningHandler(e)
+                    that.testObject.warningHandler(e)
                 })
 
                 if(f !== undefined) {
