@@ -1,6 +1,7 @@
 
 var fs = require("fs")
 var path = require('path')
+var child = require("child_process")
 
 var webpack = require("webpack")
 var browserify = require("browserify")
@@ -11,17 +12,26 @@ browserifyBuild(__dirname+"/deadunitCore.browser", 'deadunitCore.browser.gen')
 // test stuff
 
 browserifyBuild(__dirname+"/test/deadunitTests.browser", 'deadunitTests.browser')
-
-// the following generated files that has since been manually modified
-// browserifyBuild(__dirname+"/test/inlineSourceMapTest.js", 'inlineSourceMapTest.browserified')
-// browserifyBuild(__dirname+"/test/deadlinkSourcemapPath", 'deadlinkSourcemapPath')
-// browserifyBuild(__dirname+"/test/deadlinkSourceOriginal", 'deadlinkSourceOriginal')
+browserifyBuild(__dirname+"/test/inlineSourceMapTest", 'inlineSourceMapTest.browserified')
+browserifyBuild(__dirname+"/test/deadlinkSourcemapPath", 'deadlinkSourcemapPath')
+browserifyBuild(__dirname+"/test/deadlinkSourceOriginal", 'deadlinkSourceOriginal')
+buildCoffeescriptFile(__dirname+"/test/sourceMapTest.coffee")
 
 // webpack bundle
 
 buildWebpackBundle("test/webpackTest.js")
 
 
+function buildCoffeescriptFile(script) {
+    console.log(require.resolve('coffee-script/bin/coffee'))
+    var c = child.spawn('node', [require.resolve('coffee-script/bin/coffee'), script, '--map'], {stdio: 'inherit'})
+    c.on('error', function(E) {
+        console.log("ahhhh "+E)
+    })
+    c.on('exit', function() {
+        console.log("done building "+script)
+    })
+}
 
 function browserifyBuild(entrypoint, globalName) {
     var unminifiedStream = fs.createWriteStream(entrypoint+'.umd.js')

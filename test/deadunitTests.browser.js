@@ -31,16 +31,20 @@ module.exports = function(Unit, testEnvironment) {
 
                     var f = new Future; browserSpecificFutures.push(f)
                     var unittest = Unit.test(function() {
-                        this.test('webpack source map file', window.sourceMapTest3)
+                        this.test('webpack source map file', grobal.webpackTest)
                     }).events({
                         end: function(e) {
                             var results = unittest.results()
 
-                            t.ok(results.results[0].results[0].line === 4)
+                            t.ok(results.results[0].results[0].line === 2)
                             t.ok(results.results[0].results[0].sourceLines === 'this.ok(true)')
                             t.ok(results.results[0].exceptions.length === 1)
                             t.ok(results.results[0].exceptions[0].message === "webpack bundle error")
-                            t.ok(results.results[0].exceptions[0].stack.match(/sourceMapTest3 \(.*webpackTest.js:5(:[0-9]+)?\)/) !== null, results.results[0].exceptions[0].stack)
+                            var webpackExceptionLine = 3
+                            t.ok(results.results[0].exceptions[0].stack.match(
+                                    new RegExp("webpackTest \\(.*webpackTest.js:"+webpackExceptionLine+"(:[0-9]+)?\\)")
+                                ) !== null,
+                                results.results[0].exceptions[0].stack)
                             t.log(results.results[0].exceptions[0])
 
                             f.return()

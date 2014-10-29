@@ -38,6 +38,9 @@ exports.getTests = function(Unit, testEnvironment) {
             }
         }
 
+
+
+
         //*
         this.test('simple success', function(t) {
             this.count(3)
@@ -258,10 +261,10 @@ exports.getTests = function(Unit, testEnvironment) {
                                     this.ok(subtest3.file === testFileName)
 
                                     if(testEnvironment === 'node') {
-                                        var subtest3line = 150
+                                        var subtest3line = 153
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 7920
+                                        var subtest3line = 7942
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 
@@ -766,39 +769,50 @@ exports.getTests = function(Unit, testEnvironment) {
                 this.timeout(2000)
 
                 var unittest = Unit.test(function() {
-                    this.test('coffeescript file', global.sourceMapTest)
-                    this.test('inline source map file', global.sourceMapTest2)
-                    this.test('sourcemap file not found', global.sourceMapTest4)
-                    this.test('original file not found', global.sourceMapTest5)
+                    this.test('coffeescript file', global.sourceMapTest)  // coffeescript sucks
+                    this.test('inline source map file', grobal.inlineSourceMapTest)
+                    this.test('sourcemap file not found', grobal.deadlinkSourcemapPath)
+                    this.test('original file not found', grobal.deadlinkSourceOriginal)
                 }).events({
                     end: function(e) {
                         var results = unittest.results()
 
-                        t.ok(results.results[0].results[0].line === 4)
-                        t.ok(results.results[0].results[0].sourceLines === 'this.ok true')
+                        t.eq(results.results[0].results[0].line , 4)
+                        t.eq(results.results[0].results[0].sourceLines , 'this.ok true')
 
                         t.ok(results.results[0].results[1].results[0].line === 11) // in the original source it's 8, this tests turning off source map printing
                         t.ok(results.results[0].results[1].results[0].sourceLines === 'return this.ok(true);')
                         t.ok(results.results[0].exceptions.length === 1)
-                        t.ok(results.results[0].exceptions[0].message === 'sourcemap test error')
-                        t.ok(results.results[0].exceptions[0].stack.match(/sourceMapTest \(.*sourceMapTest.coffee:10(:[0-9]+)?\)/) !== null, results.results[0].exceptions[0].stack)
+                        t.eq(results.results[0].exceptions[0].message , 'sourcemap test error')
+                        t.ok(results.results[0].exceptions[0].stack.match(
+                                /sourceMapTest \(.*sourceMapTest.coffee:10(:[0-9]+)?\)/
+                            ) !== null,
+                            results.results[0].exceptions[0].stack)
                         t.log(results.results[0].exceptions[0])
 
-                        t.ok(results.results[1].results[0].line === 5) // IMPORTANT NOTE: the line *should* be 4, but looks like browserify messed this one up
-                        t.ok(results.results[1].results[0].sourceLines === 'this.ok(true)')
+                        t.eq(results.results[1].results[0].line , 3) // IMPORTANT NOTE: the line *should* be 2, but looks like browserify messed this one up
+                        t.eq(results.results[1].results[0].sourceLines, 'this.ok(true)')
 
-                        t.ok(results.results[2].results[0].line === 6)
+                        t.eq(results.results[2].results[0].line , 3) // IMPORTANT NOTE: the line *should* be 2, but looks like browserify messed this one up
                         t.ok(results.results[2].results[0].sourceLines === 'this.ok(true)')
                         t.ok(results.results[2].exceptions.length === 1)
                         t.ok(results.results[2].exceptions[0].message === "deadlink sourcemap path error")
-                        t.ok(results.results[2].exceptions[0].stack.match(/sourceMapTest4 \(.*deadlinkSourcemapPath.umd.js:7(:[0-9]+)?\)/) !== null, results.results[2].exceptions[0].stack)
+                        var deadlinkSourceMapPath_line = 4
+                        t.ok(results.results[2].exceptions[0].stack.match(
+                                new RegExp("deadlinkSourcemapPath \\(.*deadlinkSourcemapPath.umd.js:"+deadlinkSourceMapPath_line+"(:[0-9]+)?\\)") // /deadlinkSourcemapPath \(.*deadlinkSourcemapPath.umd.js:7(:[0-9]+)?\)/
+                            ) !== null,
+                            results.results[2].exceptions[0].stack)
                         t.log(results.results[2].exceptions[0])
 
-                        t.ok(results.results[3].results[0].line === 6)
+                        t.eq(results.results[3].results[0].line , 3)   // IMPORTANT NOTE: the line *should* be 2, but looks like browserify messed this one up
                         t.ok(results.results[3].results[0].sourceLines === 'this.ok(true)')
                         t.ok(results.results[3].exceptions.length === 1)
                         t.ok(results.results[3].exceptions[0].message === "deadlink source original error")
-                        t.ok(results.results[3].exceptions[0].stack.match(/sourceMapTest5 \(.*deadlinkSourceOriginal.umd.js:7(:[0-9]+)?\)/) !== null, results.results[3].exceptions[0].stack)
+                        var deadlinkSourceOriginal_line = 4
+                        t.ok(results.results[3].exceptions[0].stack.match(
+                                new RegExp("deadlinkSourceOriginal \\(.*deadlinkSourceOriginal.umd.js:"+deadlinkSourceOriginal_line+"(:[0-9]+)?\\)") // /deadlinkSourceOriginal \(.*deadlinkSourceOriginal.umd.js:7(:[0-9]+)?\)/
+                            ) !== null,
+                            results.results[3].exceptions[0].stack)
                         t.log(results.results[3].exceptions[0])
                     }
                 })
