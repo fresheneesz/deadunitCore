@@ -16,7 +16,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
     return function(t) {
 
-        this.count(17)
+        this.count(18)
         this.timeout(5 * 1000)
 
         var errorCount = 0
@@ -264,7 +264,7 @@ exports.getTests = function(Unit, testEnvironment) {
                                         var subtest3line = 153
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
-                                        var subtest3line = 7942
+                                        var subtest3line = 7951
                                         this.ok(subtest3.line === subtest3line, subtest3.line) // browserify bug causes sourcemap to not be found
                                     }
 
@@ -814,6 +814,54 @@ exports.getTests = function(Unit, testEnvironment) {
                             ) !== null,
                             results.results[3].exceptions[0].stack)
                         t.log(results.results[3].exceptions[0])
+                    }
+                })
+            })
+
+
+            t.test('using result of `test` as future', function(realTest) {
+                realTest.count(6)
+
+                var eventSequence = sequence()
+                var event = function(x) {
+                    eventSequence(function() {
+                        realTest.eq(x,1)
+                    }, function() {
+                        realTest.eq(x,2)
+                    }, function() {
+                        realTest.eq(x,3)
+                    }, function() {
+                        realTest.eq(x,4)
+                    }, function() {
+                        realTest.eq(x,5)
+                    }, function() {
+                        realTest.eq(x,6)
+                    })
+                }
+
+                var unittest = Unit.test(function(innerTest) {
+                    innerTest.test(function() {
+                        this.ok(true)
+                        event(1)
+                    }).complete.then(function() {
+                        event(2)
+                        return innerTest.test(function(t2) {
+                            this.count(1)
+                            this.timeout(1000)
+                            event(3)
+                            setTimeout(function() {
+                                t2.ok(true)
+                                event(4)
+                            },100)
+                        }).complete
+                    }).then(function() {
+                        event(5)
+                    }).catch(function(e) {
+                            t.ok(false, e)
+                    }).done()
+                }).events({
+                    end: function(e) {
+                        event(6)
                     }
                 })
             })

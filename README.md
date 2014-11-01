@@ -108,7 +108,9 @@ UnitTester
 
 `this.count(<number>)` - Declares that a test contains a certain `<number>` of test groups and asserts (the `ok` method call). Does not count asserts in subtests. This should only be called once per group, and shouldn't be called asynchronously. This is also used to determine when tests are complete. If `count` is not called in a test, that test completes when all of its subtests complete. If `count` is called, then the test completes when the count is reached.
 
-`this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
+`var testObject = this.test([<name>, ]<testFunction>)` - runs a subtest. Has the same behavior as `Unit.test`. Any number of subtests can be nested inside eachother.
+
+* `testObject.complete` is an [async-future object](https://github.com/fresheneesz/asyncFuture) that resolves when the subtest is complete (when all its exepected asserts are finished or the test times out)
 
 `this.log(<value>, <value2>, ...)` - Records a concatenated list of values that can be accessed in the test results. This will probably normally be used to record informational string messages.
 
@@ -305,6 +307,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.13 - adding the `completed` future on tests
 * 5.0.12 - adding support for pulling sources from the sourcemap (if the sourcemap has them)
 * 5.0.10 - upgrading async futures, adding test case for the recursion issue, and bolstering "too much recursion" avoidance
 * 5.0.9 - fixing too much recursion issue in the tests (affected firefox)
