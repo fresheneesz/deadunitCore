@@ -268,6 +268,7 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
+* When an error has to be thrown asynchronously in a browser environment, throw e.stack.toString() so the stack trace isn't lost to the stupid window.onerror junk
 * finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * when stacktrace.js supports asynchronous ajax, upgrade it
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
@@ -307,6 +308,8 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.14
+    * fixing problem with error propogation when the sourcemap has an error (eg if the sourcemap isn't properly formed)
 * 5.0.13 - adding the `completed` future on tests
 * 5.0.12 - adding support for pulling sources from the sourcemap (if the sourcemap has them)
 * 5.0.10 - upgrading async futures, adding test case for the recursion issue, and bolstering "too much recursion" avoidance

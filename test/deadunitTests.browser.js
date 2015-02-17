@@ -36,8 +36,8 @@ module.exports = function(Unit, testEnvironment) {
                         end: function(e) {
                             var results = unittest.results()
 
-                            t.ok(results.results[0].results[0].line === 2)
-                            t.ok(results.results[0].results[0].sourceLines === 'this.ok(true)')
+                            t.ok(results.results[0].results[0].line === 2, results.results[0].results[0].line)
+                            t.ok(results.results[0].results[0].sourceLines === 'this.ok(true)', results.results[0].results[0].sourceLines)
                             t.ok(results.results[0].exceptions.length === 1)
                             t.ok(results.results[0].exceptions[0].message === "webpack bundle error")
                             var webpackExceptionLine = 3
@@ -57,7 +57,7 @@ module.exports = function(Unit, testEnvironment) {
             this.test('ajax failure', function(t) {
                 this.count(4)
 
-                var FailUnit = require('./deadunitCore.browserAjaxFailure')
+                var FailUnit = require('./tests/deadunitCore.browserAjaxFailure')
 
                 var f = new Future; browserSpecificFutures.push(f)
                 var unittest = FailUnit.test(function(t) {
@@ -79,7 +79,7 @@ module.exports = function(Unit, testEnvironment) {
                     }
                 })
 
-                var FailUnit2 = require('./deadunitCore.browserAjaxThrow')
+                var FailUnit2 = require('./tests/deadunitCore.browserAjaxThrow')
 
                 var f2 = new Future; browserSpecificFutures.push(f2)
                 var unittest2 = FailUnit2.test(function(t) {
@@ -102,8 +102,8 @@ module.exports = function(Unit, testEnvironment) {
                 })
 
             })
-
         })
+
 
         Future.all(browserSpecificFutures).then(function() {
             t.test("common tests", tests.getTests(Unit, testEnvironment, {return: function(){}}))

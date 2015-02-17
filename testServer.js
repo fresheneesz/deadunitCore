@@ -13,7 +13,7 @@ var server = http.createServer(function (request, res) {
             console.log("got request for: "+path)
 
             if(path === '/') {
-                path = '/testDeadunitCore.html'
+                path = '/test/testDeadunitCore.html'
             }
 
             var file = fs.readFileSync(__dirname+path)

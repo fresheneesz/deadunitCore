@@ -118,7 +118,7 @@ var config = module.exports = proto(function() {
             } else {
                 return resolveSourceMap(response.text, url, that.readFile).catch(function(e){
                     warningHandler(e)
-                    return Future(undefined)
+                    return Future(null)
 
                 }).then(function(sourceMapObject) {
                     if(sourceMapObject !== null) {

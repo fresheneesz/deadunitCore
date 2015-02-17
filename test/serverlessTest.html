@@ -2,16 +2,15 @@
 <body>
 </body>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-
-<script src='node_modules/requirejs/require.js'></script>
+<script src='../node_modules/requirejs/require.js'></script>
 
 <script>
     "use strict";
     require.config({
         paths: {
-            "deadunitCore": "deadunitCore.browser.umd",
-            "deadunitTests": "test/deadunitTests.browser.umd", // load this instead of requiring it in deadunitTests because this is a test of that bundle
-            "deadunit": "node_modules/deadunit/browserPackage/deadunit.browser.gen.umd"
+            "deadunitCore": "../deadunitCore.browser.umd",
+            "deadunitTests": "generated/deadunitTests.browser.umd", // load this instead of requiring it in deadunitTests because this is a test of that bundle
+            "deadunit": "../node_modules/deadunit/browserPackage/deadunit.browser.gen.umd"
         }
     })
 
@@ -20,7 +19,7 @@
             this.warning(function(e) {
                 console.log(e.message)
             })
-                    debugger;
+
             this.test(deadunitTests.name, deadunitTests(Unit, 'web_fileProtocol'))
 
         }).writeHtml()

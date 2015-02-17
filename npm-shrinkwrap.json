@@ -1,6 +1,6 @@
 {
   "name": "deadunit-core",
-  "version": "5.0.10",
+  "version": "5.0.13",
   "dependencies": {
     "ajax": {
       "version": "1.0.3",
@@ -81,7 +81,7 @@
     },
     "stack-trace": {
       "version": "0.0.7",
-      "from": "stack-trace@0.0.7",
+      "from": "https://registry.npmjs.org/stack-trace/-/stack-trace-0.0.7.tgz",
       "resolved": "https://registry.npmjs.org/stack-trace/-/stack-trace-0.0.7.tgz"
     },
     "stackinfo": {

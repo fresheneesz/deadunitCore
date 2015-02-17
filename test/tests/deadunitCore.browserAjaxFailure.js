@@ -3,13 +3,15 @@
 
 
 var Future = require('async-future')
-var deadunitCore = require("../deadunitCore")
-var browserConfig = require('../deadunitCore.browserConfig')
+var deadunitCore = require("../../src/deadunitCore")
+var browserConfig = require('../../src/deadunitCore.browserConfig')
 
 var config = browserConfig()
 
 config.ajax = function() {
-    throw new Error("You called the ajax function that always fails")
+    var f = new Future
+    f.throw("You called the ajax function that always fails")
+    return f
 }
 
 module.exports = deadunitCore(config)

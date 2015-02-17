@@ -7,19 +7,21 @@ var webpack = require("webpack")
 var browserify = require("browserify")
 
 
-browserifyBuild(__dirname+"/deadunitCore.browser", 'deadunitCore.browser.gen')
+browserifyBuild(__dirname+"/src/deadunitCore.browser", __dirname, 'deadunitCore.browser.gen')
 
 // test stuff
 
-browserifyBuild(__dirname+"/test/deadunitTests.browser", 'deadunitTests.browser')
-browserifyBuild(__dirname+"/test/inlineSourceMapTest", 'inlineSourceMapTest.browserified')
-browserifyBuild(__dirname+"/test/deadlinkSourcemapPath", 'deadlinkSourcemapPath')
-browserifyBuild(__dirname+"/test/deadlinkSourceOriginal", 'deadlinkSourceOriginal')
-buildCoffeescriptFile(__dirname+"/test/sourceMapTest.coffee")
+var outputFolder = __dirname+"/test/generated"
+
+browserifyBuild(__dirname+"/test/deadunitTests.browser", outputFolder, 'deadunitTests.browser')
+browserifyBuild(__dirname+"/test/tests/inlineSourceMapTest", outputFolder, 'inlineSourceMapTest.browserified')
+browserifyBuild(__dirname+"/test/tests/deadlinkSourcemapPath", outputFolder, 'deadlinkSourcemapPath')
+browserifyBuild(__dirname+"/test/tests/deadlinkSourceOriginal", outputFolder, 'deadlinkSourceOriginal')
+buildCoffeescriptFile(__dirname+"/test/tests/sourceMapTest.coffee")
 
 // webpack bundle
 
-buildWebpackBundle("test/webpackTest.js")
+buildWebpackBundle("test/tests/webpackTest.js")
 
 
 function buildCoffeescriptFile(script) {
@@ -33,8 +35,8 @@ function buildCoffeescriptFile(script) {
     })
 }
 
-function browserifyBuild(entrypoint, globalName) {
-    var unminifiedStream = fs.createWriteStream(entrypoint+'.umd.js')
+function browserifyBuild(entrypoint, outputFolder, globalName) {
+    var unminifiedStream = fs.createWriteStream(outputFolder+'/'+path.basename(entrypoint)+'.umd.js')
     browserify({baseDir: __dirname}).add(entrypoint+'.js').bundle({debug: true, standalone: globalName}).pipe(unminifiedStream)
 
     unminifiedStream.on('close', function() {
