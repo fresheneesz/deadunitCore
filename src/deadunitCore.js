@@ -212,7 +212,7 @@ module.exports = function(options) {
                         throwErrorFn = handlerInfo.domain.bind(throwErrorFn)    // this domain bind is needed because emit is done inside deadunit's test domain, which isn't where we want to put errors caused by the event handlers
                     }
 
-                    setTimeout(throwErrorFn, 0)
+                    throwErrorFn(e)
                 }
             })
         }
@@ -241,7 +241,10 @@ module.exports = function(options) {
                 try {
                     tester.warningHandler(newError)
                 } catch(warningHandlerError) {
-                    tester.manager.emit('exception', Future(warningHandlerError)).done() // if shit gets this bad, that sucks
+                    var warningHandlerErrorText = warningHandlerError.stack?warningHandlerError.stack:warningHandlerError
+                    var textForOriginalError = newError.stack?newError.stack:newError
+                    var errorception = new Error("An error happened in the error handler: "+warningHandlerErrorText+"\n"+textForOriginalError)
+                    tester.manager.emit('exception', Future(errorception)).done() // if shit gets this bad, that sucks
                 }
             } else {
                 console.error(newError)

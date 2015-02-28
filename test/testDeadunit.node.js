@@ -3,6 +3,7 @@
 global.grobal  = {a:'mooo'} // global variable!!!!!
 
 var fs = require("fs")
+var domain = require("domain")
 
 var OldDeadunit = require('deadunit')
 var Unit = require('../src/deadunitCore.node')
@@ -26,7 +27,7 @@ var mainTest = OldDeadunit.test(tests.name, function(t) {
 
     //*
     this.test('node-specific tests', function() {
-        this.count(2)
+        this.count(3)
         this.timeout(30 * 1000)
 
         this.ok(fs.existsSync(__dirname+'/../npm-shrinkwrap.json'))   // make sure people commit with a shrinkwrap file
@@ -89,7 +90,22 @@ var mainTest = OldDeadunit.test(tests.name, function(t) {
             }})
         })
 
-
+        // manifests because of a bug in node that hasn't been fixed in the latest release yet (tho is fixed for the next major version) https://github.com/joyent/node/issues/7550
+        // note that this was also a bug in deadunit-core that meant the actual exception wasn't thrown, instead undefined was being thrown
+        this.test("errors in events were causing node to quit", function(t) {
+            this.count(1)
+            var d = domain.create();
+            d.on('error', function(er) {
+                t.eq(er.message, "don't die!")
+            })
+            d.run(function() {
+                Unit.test(function() {
+                    this.ok(true)
+                }).events({end: function() {
+                    throw new Error("don't die!")
+                }})
+            })
+        })
 
     })
 

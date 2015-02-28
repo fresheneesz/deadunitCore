@@ -62,26 +62,26 @@ npm install deadunit-core
 
 Usage
 =====
-##### node.js or [webpack](https://github.com/webpack/webpack)
+##### node.js
 ```javascript
-var Unit = require('deadunit-core')
+var Unit = require('deadunit-core/node')
 ```
 
-##### [webpack](https://github.com/webpack/webpack)
+##### [webpack](https://github.com/webpack/webpack) or browserify
 ```javascript
-var Unit = require('deadunit-core/deadunitCore.browser')
+var Unit = require('deadunit-core/browser')
 ```
 
 ##### require.js
 ```javascript
-require(['node_modules/deadunitCore.browser.gen.umd'], function(Unit) {
+require(['node_modules/deadunit-core/deadunitCore.browser.gen.umd'], function(Unit) {
    // ...
 }
 ```
 
-##### browser global (the global variable will be 'deaunitCore')
+##### browser global (the global variable will be 'deadunitCore')
 ```javascript
-<script src='node_modules/deadunitCore.browser.gen.umd'></script>
+<script src='node_modules/deadunit-core/deadunitCore.browser.gen.umd'></script>
 ```
 
 `Unit.test([<name>, ]<testFunction>)` - runs a suite of unit tests. Returns a `UnitTest` object. Returns without having run the tests first - the tests are scheduled to run asynchronously soon thereafter.
@@ -309,6 +309,10 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.15
+    * Fixing bug: "errors in events were causing node to quit"
+    * Adding shorter `require` paths for browser and node
+    * Correcting usage documentation
 * 5.0.14
     * fixing problem with error propogation when the sourcemap has an error (eg if the sourcemap isn't properly formed)
     * throwing asynchronous exceptions so they don't lose their stack trace in browsers (the message itself will contain the trace)
