@@ -173,6 +173,12 @@ module.exports = deadunitCore({
         }
 
         return results
+    },
+
+    throwAsyncException: function(e) {
+        setTimeout(function() {
+            throw e
+        },0)
     }
 })
 

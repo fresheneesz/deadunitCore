@@ -157,4 +157,11 @@ var config = module.exports = proto(function() {
     this.getExceptionInfo= function(e) {
         return stackinfo(e)
     }
+
+    this.throwAsyncException = function(e) {
+        setTimeout(function() {
+            if(e.stack !== undefined) throw e.stack
+            else                      throw e
+        },0)
+    }
 })

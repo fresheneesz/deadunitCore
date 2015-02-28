@@ -205,9 +205,8 @@ module.exports = function(options) {
                     handlerInfo.handler.call(undefined, eventData)
                 } catch(e) {
 
-                    var throwErrorFn = function() {
-                        throw e // throw error asynchronously because these error should be separate from the test exceptions
-                    }
+                    // throw error asynchronously because these error should be separate from the test exceptions
+                    var throwErrorFn = options.throwAsyncException
 
                     if(handlerInfo.domain) {
                         throwErrorFn = handlerInfo.domain.bind(throwErrorFn)    // this domain bind is needed because emit is done inside deadunit's test domain, which isn't where we want to put errors caused by the event handlers
@@ -531,6 +530,7 @@ module.exports = function(options) {
         },0)
     }
 
+    // type - either "count" or "assert"
     function assert(that, success, actualValue, expectedValue, type, functionName/*="ok"*/, lineInfo/*=dynamic*/, stackIncrease/*=0*/) {
         if(!stackIncrease) stackIncrease = 1
         if(!functionName) functionName = "ok"
@@ -542,7 +542,7 @@ module.exports = function(options) {
         var emitData = lineInfoFuture.then(function(lineInfo) {
             var result = lineInfo
             result.type = 'assert'
-            result.success = success
+            if(type !=='count') result.success = success === true
 
             if(actualValue !== undefined)     result.actual = actualValue
             if(expectedValue !== undefined)   result.expected = expectedValue
