@@ -64,7 +64,7 @@ Usage
 =====
 ##### node.js
 ```javascript
-var Unit = require('deadunit-core/node')
+var Unit = require('deadunit-core/nodejs')
 ```
 
 ##### [webpack](https://github.com/webpack/webpack) or browserify
@@ -267,14 +267,14 @@ To Do
 
 
 * fix bug: tests ending early when there asynchronous test groups
-
 * Add source location to logs (but not sourceLines)
-* When an error has to be thrown asynchronously in a browser environment, throw e.stack.toString() so the stack trace isn't lost to the stupid window.onerror junk
-* finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * when stacktrace.js supports asynchronous ajax, upgrade it
+* stacktrace.js should support overriding its ajax function - use this to better unify the source cache, and change the api to allow overriding of deadunitCore's ajax as well
+
+* Apparently modern browsers have an `error` property on the object that comes through window.onerror - use this to map errors that come through onerror - https://bugsnag.com/blog/js-stacktraces/
+* finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
 * Look into using https://ci.testling.com/ for browser testing
-* when chrome bug https://code.google.com/p/chromium/issues/detail?id=368444 is fixed, set ajax back to asynchronous
 * There's already a way to work around dead fibers, but still need to make a way to work around dead futures
   * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
     * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)

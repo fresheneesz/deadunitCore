@@ -84,7 +84,7 @@ module.exports = function(options) {
                 fakeTest.mainTestState = {get unhandledErrorHandler(){return getUnhandledErrorHandler() || options.defaultTestErrorHandler(fakeTest)}}
 
                 var warningInfoMessageHasBeenOutput = false
-                fakeTest.warningHandler = function(w) {
+                this.manager.testObject.warningHandler = fakeTest.warningHandler = function(w) {
                     var errorHandler = getUnhandledErrorHandler()
                     if(warningInfoMessageHasBeenOutput === false) {
                         var warning = newError("You've received at least one warning. If you don't want to treat warnings as errors, use the `warning` method to redefine how to handle them.")
@@ -561,18 +561,19 @@ module.exports = function(options) {
 
 
     function getLineInformation(functionName, stackIncrease, doSourcemappery, warningHandler) {
-        var info = options.getLineInfo(stackIncrease)
 
-        var file, line, column;
-
-        return getSourceMapConsumer(info.file, warningHandler).catch(function(e){
+        var file, line, column, lineinfo;
+        return options.getLineInfo(stackIncrease).then(function(info){
+            lineinfo = info
+            return getSourceMapConsumer(info.file, warningHandler)
+        }).catch(function(e){
             warningHandler(e)
             return Future(undefined)
 
         }).then(function(sourceMapConsumer) {
             if(sourceMapConsumer !== undefined && doSourcemappery) {
 
-                var mappedInfo = getMappedSourceInfo(sourceMapConsumer, info.file, info.line, info.column)
+                var mappedInfo = getMappedSourceInfo(sourceMapConsumer, lineinfo.file, lineinfo.line, lineinfo.column)
                 file = mappedInfo.file
                 line = mappedInfo.line
                 column = mappedInfo.column
@@ -580,9 +581,9 @@ module.exports = function(options) {
 
                 var multiLineSearch = !mappedInfo.usingOriginalFile // don't to a multi-line search if the source has been mapped (the file might not be javascript)
             } else {
-                file = info.file
-                line = info.line
-                column = info.column
+                file = lineinfo.file
+                line = lineinfo.line
+                column = lineinfo.column
                 var sourceLines = undefined
                 var multiLineSearch = true
             }
@@ -719,17 +720,21 @@ module.exports = function(options) {
     function mapException(exception, warningHandler) {
         try {
             if(exception instanceof Error) {
-                var trace = options.getExceptionInfo(exception)
-                var smcFutures = []
-                for(var n=0; n<trace.length; n++) {
-                    if(trace[n].file !== undefined) {
-                        smcFutures.push(getSourceMapConsumer(trace[n].file, warningHandler))
-                    } else {
-                        smcFutures.push(Future(undefined))
-                    }
-                }
+                var stacktrace;
+                return options.getExceptionInfo(exception).then(function(trace){
+                    stacktrace = trace
 
-                return Future.all(smcFutures).then(function(sourceMapConsumers) {
+                    var smcFutures = []
+                    for(var n=0; n<trace.length; n++) {
+                        if(trace[n].file !== undefined) {
+                            smcFutures.push(getSourceMapConsumer(trace[n].file, warningHandler))
+                        } else {
+                            smcFutures.push(Future(undefined))
+                        }
+                    }
+
+                    return Future.all(smcFutures)
+                }).then(function(sourceMapConsumers) {
                     var CustomMappedException = proto(MappedException, function() {
                         // set the name so it looks like the original exception when printed
                         // this subclasses MappedException so that name won't be an own-property
@@ -737,7 +742,7 @@ module.exports = function(options) {
                     })
 
                     try {
-                        throw CustomMappedException(exception, trace, sourceMapConsumers)  // IE doesn't give exceptions stack traces unless they're actually thrown
+                        throw CustomMappedException(exception, stacktrace, sourceMapConsumers)  // IE doesn't give exceptions stack traces unless they're actually thrown
                     } catch(mappedExcetion) {
                         return Future(mappedExcetion)
                     }
@@ -793,7 +798,11 @@ module.exports = function(options) {
                 newTraceLines.push(traceLine)
             }
 
-            this.stack = this.name+': '+this.message+'\n'+newTraceLines.join('\n')
+            Object.defineProperty(this, 'stack', {
+                get: function() {
+                    return this.name+': '+this.message+'\n'+newTraceLines.join('\n')
+                }
+            })
         }
     })
 

@@ -5,17 +5,19 @@ var path = require('path');
 
 var Future = require('async-future')
 var proto = require('proto')
-var stackinfo = require('stackinfo')
+var stacktracejs = require('stacktrace-js')
 var ajax = require("ajax")
 var resolveSourceMap = Future.wrap(require('source-map-resolve').resolveSourceMap)
 
 var deadunitCore = require("./deadunitCore")
 var isRelative = require('./isRelative')
 
-ajax.setSynchronous(true) // todo: REMOVE THIS once this chrome bug is fixed in a public release: https://code.google.com/p/chromium/issues/detail?id=368444
+//ajax.setSynchronous(true) // todo: REMOVE THIS once this chrome bug is fixed in a public release: https://code.google.com/p/chromium/issues/detail?id=368444
 
-// add sourceFile contents into stacktrace.js's cache
 var sourceCache = {}
+/* todo: add something like this back once stacktrace-js support swapping out ajax implementations
+// add sourceFile contents into stacktrace.js's cache
+
 var cacheGet = function(url) {
     return sourceCache[url]
 }
@@ -28,6 +30,7 @@ var cacheSet = function(url, responseFuture) {
     }
 }
 
+// what was this for?
 if(window.setImmediate === undefined) {
     window.setImmediate = function(fn, params) {
         setTimeout(function() {
@@ -36,8 +39,10 @@ if(window.setImmediate === undefined) {
     }
 }
 
-ajax.cacheGet(cacheGet)
-ajax.cacheSet(cacheSet)
+
+//ajax.cacheGet(cacheGet)
+//ajax.cacheSet(cacheSet)
+*/
 
 
 var config = module.exports = proto(function() {
@@ -87,13 +92,14 @@ var config = module.exports = proto(function() {
         runTest()
     }
     this.getScriptSourceLines= function(path) {
+        /* todo: figure out what to do here when you can merge file caches with stacktrace.js
         if(stackinfo.sourceCache[path] !== undefined) {
             return Future(stackinfo.sourceCache[path])
-        } else {
+        } else {*/
             return this.ajax(path).then(function(response) {
                 return Future(response.text.split('\n'))
             })
-        }
+        //}
 
     }
     this.getSourceMapObject = function(url, warningHandler) {
@@ -151,11 +157,38 @@ var config = module.exports = proto(function() {
     }
 
     this.getLineInfo= function(stackIncrease) {
-        return stackinfo()[3+stackIncrease]
+        var result = new Future
+        stacktracejs.get({sourceCache: sourceCache}).then(function(stackFrames){
+            var frame = stackFrames[3+stackIncrease]
+            result.return({
+                'function': frame.functionName,
+                line: frame.lineNumber,
+                column: frame.columnNumber,
+                file: frame.fileName
+            })
+        }).catch(function(e) {
+            result.throw(e)
+        })
+
+        return result
     }
 
     this.getExceptionInfo= function(e) {
-        return stackinfo(e)
+        var result = new Future
+        stacktracejs.fromError(e, {sourceCache: sourceCache}).then(function(stackFrames){
+            result.return(stackFrames.map(function(frame){
+                return {
+                    'function': frame.functionName,
+                    line: frame.lineNumber,
+                    column: frame.columnNumber,
+                    file: frame.fileName
+                }
+            }))
+        }).catch(function(e) {
+            result.throw(e)
+        })
+
+        return result
     }
 
     this.throwAsyncException = function(e) {

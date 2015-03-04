@@ -144,11 +144,11 @@ module.exports = deadunitCore({
         var lineNumber = stackPosition.getLineNumber()
         var column = stackPosition.getColumnNumber()
 
-        return {
+        return Future({
             file: filename,
             line: lineNumber,
             column: column
-        }
+        })
     },
 
     getExceptionInfo: function(e) {
@@ -172,7 +172,7 @@ module.exports = deadunitCore({
             results.push(result)
         }
 
-        return results
+        return Future(results)
     },
 
     throwAsyncException: function(e) {

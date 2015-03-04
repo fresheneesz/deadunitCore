@@ -86,7 +86,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
                     t.ok(results.name === undefined)
                     t.ok(results.exceptions.length === 1, results.exceptions.length)
-                    t.ok(results.exceptions[0].message === 'sync')
+                    t.ok(results.exceptions[0].message === 'sync', results.exceptions[0].message)
                     t.ok(results.timeout === true, results.timeout)
 
                     simpleExceptionDone.return()
