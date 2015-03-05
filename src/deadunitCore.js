@@ -237,17 +237,17 @@ module.exports = function(options) {
     function createUnhandledErrorHandler(tester) {
 
         var handleErrorInErrorHandler = function(warn, newError) {
+            var textForOriginalError = newError.stack?newError.stack:newError
             if(warn !== false) {
                 try {
                     tester.warningHandler(newError)
                 } catch(warningHandlerError) {
                     var warningHandlerErrorText = warningHandlerError.stack?warningHandlerError.stack:warningHandlerError
-                    var textForOriginalError = newError.stack?newError.stack:newError
                     var errorception = new Error("An error happened in the error handler: "+warningHandlerErrorText+"\n"+textForOriginalError)
                     tester.manager.emit('exception', Future(errorception)).done() // if shit gets this bad, that sucks
                 }
             } else {
-                console.error(newError)
+                console.error(textForOriginalError)
             }
         }
 

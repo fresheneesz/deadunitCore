@@ -41,6 +41,12 @@ exports.getTests = function(Unit, testEnvironment) {
 
 
 
+
+
+
+
+
+
         //*
         this.test('simple success', function(t) {
             this.count(3)
@@ -937,38 +943,38 @@ exports.getTests = function(Unit, testEnvironment) {
                     })
                 })
 
-                /*this.test("tests ending early when there asynchronous test groups", function(t) {
-                    this.count(1)
-
-                    var testCompleted = false
-                    var unitTest = Unit.test(function(t) {
-                        this.timeout(500) // shouldn't matter if its short
-
-                        this.test("fuck", function(t) {
-                            this.ok(true)
-                        }).complete.then(function() {
-                            setTimeout(function() {
-                                t.test("fuckssuace", function(t) {
-                                    this.count(2)
-
-                                    this.ok(true)
-                                    setTimeout(function() {
-                                        t.ok(true)
-                                    },1000)
-                                })
-                            }, 100)
-                        })
-                    }).events({
-                        end: function(e) {
-                            testCompleted = true
-                        },
-                        assert: function() {
-                            if(testCompleted) {
-                                t.ok(false)
-                            }
-                        }
-                    })
-                })   */
+//                this.test("tests ending early when there asynchronous test groups", function(t) {
+//                    this.count(1)
+//
+//                    var testCompleted = false
+//                    var unitTest = Unit.test(function(t) {
+//                        this.timeout(500) // shouldn't matter if its short
+//
+//                        this.test("fuck", function(t) {
+//                            this.ok(true)
+//                        }).complete.then(function() {
+//                            setTimeout(function() {
+//                                t.test("fuckssuace", function(t) {
+//                                    this.count(2)
+//
+//                                    this.ok(true)
+//                                    setTimeout(function() {
+//                                        t.ok(true)
+//                                    },1000)
+//                                })
+//                            }, 100)
+//                        })
+//                    }).events({
+//                        end: function(e) {
+//                            testCompleted = true
+//                        },
+//                        assert: function() {
+//                            if(testCompleted) {
+//                                t.ok(false)
+//                            }
+//                        }
+//                    })
+//                })
 
                 this.test("t.ok(undefined) shouldn't be ok", function(t) {
                     this.count(2)

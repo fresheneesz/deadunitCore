@@ -30,7 +30,14 @@ var cacheSet = function(url, responseFuture) {
     }
 }
 
-// what was this for?
+
+
+//ajax.cacheGet(cacheGet)
+//ajax.cacheSet(cacheSet)
+*/
+
+
+// setImmediate is used by source-map-resolve (and also
 if(window.setImmediate === undefined) {
     window.setImmediate = function(fn, params) {
         setTimeout(function() {
@@ -38,12 +45,6 @@ if(window.setImmediate === undefined) {
         },0)
     }
 }
-
-
-//ajax.cacheGet(cacheGet)
-//ajax.cacheSet(cacheSet)
-*/
-
 
 var config = module.exports = proto(function() {
     this.init = function() {
