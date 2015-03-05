@@ -64,7 +64,7 @@ Usage
 =====
 ##### node.js
 ```javascript
-var Unit = require('deadunit-core/node')
+var Unit = require('deadunit-core/nodejs')
 ```
 
 ##### [webpack](https://github.com/webpack/webpack) or browserify
@@ -265,13 +265,13 @@ This needs more testing! Please help by testing and reporting bugs in other brow
 To Do
 =====
 
-
 * fix bug: tests ending early when there asynchronous test groups
-
 * Add source location to logs (but not sourceLines)
-* When an error has to be thrown asynchronously in a browser environment, throw e.stack.toString() so the stack trace isn't lost to the stupid window.onerror junk
-* finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * when stacktrace.js supports asynchronous ajax, upgrade it
+* stacktrace.js should support overriding its ajax function - use this to better unify the source cache, and change the api to allow overriding of deadunitCore's ajax as well
+
+* Apparently modern browsers have an `error` property on the object that comes through window.onerror - use this to map errors that come through onerror - https://bugsnag.com/blog/js-stacktraces/
+* finish the serverlessTest.html tests, and enable deadunit to work (in a limited way) on files accessed using file:// protocol paths (see here for some help: http://stackoverflow.com/questions/9404793/check-if-same-origin-policy-applies/24619327#24619327 )
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
 * Look into using https://ci.testling.com/ for browser testing
 * when chrome bug https://code.google.com/p/chromium/issues/detail?id=368444 is fixed, set ajax back to asynchronous
@@ -309,6 +309,9 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.16
+    * changing require pattern for node to deadunitCore/nodejs
+    * couple minor fixes
 * 5.0.15
     * Fixing bug: "errors in events were causing node to quit"
     * Adding shorter `require` paths for browser and node

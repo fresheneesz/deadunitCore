@@ -28,6 +28,7 @@ var cacheSet = function(url, responseFuture) {
     }
 }
 
+// source-map-resolve assumed the availability of setImmediate
 if(window.setImmediate === undefined) {
     window.setImmediate = function(fn, params) {
         setTimeout(function() {
@@ -151,11 +152,11 @@ var config = module.exports = proto(function() {
     }
 
     this.getLineInfo= function(stackIncrease) {
-        return stackinfo()[3+stackIncrease]
+        return Future(stackinfo()[3+stackIncrease])
     }
 
     this.getExceptionInfo= function(e) {
-        return stackinfo(e)
+        return Future(stackinfo(e))
     }
 
     this.throwAsyncException = function(e) {
