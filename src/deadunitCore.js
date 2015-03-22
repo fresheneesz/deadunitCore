@@ -771,7 +771,11 @@ module.exports = function(options) {
 
             for(var p in originalError) {
                 if(Object.hasOwnProperty.call(originalError, p)) {
-                    this[p] = originalError[p]
+                    try {
+                        this[p] = originalError[p]
+                    } catch(e) {
+                        console.log("Error setting property "+p+' with value '+originalError[p])
+                    }
                 }
             }
 

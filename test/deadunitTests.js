@@ -47,6 +47,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
 
 
+
         //*
         this.test('simple success', function(t) {
             this.count(3)
@@ -267,7 +268,7 @@ exports.getTests = function(Unit, testEnvironment) {
                                     this.ok(subtest3.file === testFileName)
 
                                     if(testEnvironment === 'node') {
-                                        var subtest3line = 159
+                                        var subtest3line = 160
                                         this.ok(subtest3.line === subtest3line, subtest3.line)
                                     } else {
                                         var subtest3line = subtest3.line//8038 - i don't care anymore, just make sure the other line is the correct distance away
@@ -875,7 +876,7 @@ exports.getTests = function(Unit, testEnvironment) {
 
 
             t.test('former bugs', function() {
-                this.count(4)
+                this.count(5)
 
                 this.test('deadunit would crash if an asynchronous error was thrown in the top-level main test', function(t) {
                     this.count(2)
@@ -988,6 +989,32 @@ exports.getTests = function(Unit, testEnvironment) {
 
                             t.ok(results.results.length === 1, results.results)
                             t.ok(results.results[0].success === false, results.results[0].success)
+                        }
+                    })
+                })
+                this.test("throwing an exception with an own and enumerable stack property fails", function(t) {
+                    this.count(2)
+
+                    var unitTest = Unit.test(function() {
+                        var CustomError = function(){}
+                        CustomError.prototype = new Error()
+
+                        var e = new CustomError()
+                        e.message = "boooo!"
+                        Object.defineProperty(e, 'stack', {
+                            get: function() {
+                                return "whatever"
+                            },
+                            enumerable: true
+                        })
+
+                        throw e
+                    }).events({
+                        end: function(e) {
+                            var results = unitTest.results()
+
+                            t.eq(results.exceptions[0].message, "boooo!")
+                            t.eq(results.exceptions[0].stack, 'Error: boooo!\n')
                         }
                     })
                 })
