@@ -309,6 +309,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.17 - minor upgrade from stackinfo (fixing a bug parsing one type of exception)
 * 5.0.16
     * changing require pattern for node to deadunitCore/nodejs
     * couple minor fixes
