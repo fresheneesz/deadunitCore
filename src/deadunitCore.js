@@ -818,7 +818,7 @@ module.exports = function(options) {
         var parenCount = 0
         var mode = 0 // mode 0 for paren searching, mode 1 for double-quote searching, mode 2 for single-quote searching
         var lastWasBackslash = false // used for quote searching
-        for(var n=startLine; true; n++) {
+        for(var n=startLine; n<fileLines.length; n++) {
             var line = fileLines[n]
             lines.push(line.trim())
 
