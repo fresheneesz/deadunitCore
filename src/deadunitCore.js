@@ -484,7 +484,6 @@ module.exports = function(options) {
             unitTester.mainTester.timeouts.forEach(function(to) {
                 clearTimeout(to)
             })
-            console.log("effed timeouts")
             unitTester.mainTester.timeouts = []
 
             endTest(unitTester, 'normal')
@@ -525,13 +524,11 @@ module.exports = function(options) {
             }
         }, unitTester.timeoutTime)
 
-        console.log("created: "+unitTester.timeoutHandle)
         timeouts.push(unitTester.timeoutHandle)
     }
 
     // removes an item from an array
     function remove(array, item) {
-        console.log("attempting to remove "+item)
         var index = array.indexOf(item)
         if(index !== -1)
             array.splice(index, 1) // no longer throwing Error("Item doesn't exist to remove") if there's nothing to remove - in the case that mainTester.timeouts gets set back to [] (when done), it won't be there
