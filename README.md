@@ -111,7 +111,7 @@ UnitTester
 
 `this.log(<value>, <value2>, ...)` - Records a concatenated list of values that can be accessed in the test results. This will probably normally be used to record informational string messages.
 
-`this.timeout(<milliseconds>)` - adds a timeout of `<milliseconds>`  from the time at which its called. The test will only time out when all added timeouts expire. When `Unit.test` is called, a timeout of `3000ms` is set, and the first time `this.timeout` is called, it will override this default instead of just adding an extra timeout - so you can reduce the timeout from this default. Note that this is a timeout for the entire test, not just the specific test-group.
+`this.timeout(<milliseconds>)` - Adds a timeout of `<milliseconds>`, where the test will timeout if no assert has been made for that many milliseconds. The test will only time out when all added timeouts expire. When `Unit.test` is called, a timeout of `3000ms` is set, and the first time `this.timeout` is called, it will override this default instead of just adding an extra timeout - so you can reduce the timeout from this default. Note that this is a timeout for the entire test, not just the specific test-group.
 
 `this.before(<function>)` - Runs the passed `<function>` once before each subtest in the test.
 
