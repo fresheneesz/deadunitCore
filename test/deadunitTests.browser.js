@@ -22,6 +22,9 @@ module.exports = function(Unit, testEnvironment) {
 
 
 
+
+
+
         //*
         this.test('browser-specific tests', function() {
 
@@ -56,7 +59,7 @@ module.exports = function(Unit, testEnvironment) {
 
             // note: this test used to cause a stack loop that crashed chrome and blew firefox's memory usage way up (probably until it'd crash too)
             this.test('ajax failure', function(t) {
-                this.count(4)
+                this.count(7)
 
                 var FailUnit = require('./tests/deadunitCore.browserAjaxFailure')
 
@@ -73,12 +76,33 @@ module.exports = function(Unit, testEnvironment) {
                     end: function(e) {
                         var results = unittest.results()
 
+                        t.log(results.results)
+                        t.log(results.exceptions)
+
+                        t.eq(results.timeout, false)
                         t.ok(results.results.length === 3, results.results.length)
+
                         t.ok(results.exceptions.length >= 2, results.exceptions.length) //  honestly i'm just happy if this test doesn't crash the browser
+//                        t.log(results.exceptions)
+
+                        var messagesToFind = ['synchronous error', 'asynchronous error']
+                        results.exceptions.forEach(function(exception) {
+                            if(exception instanceof Error) {
+
+                                for(var x=0;x<messagesToFind.length;x++) {
+                                    if(exception.message.indexOf(messagesToFind[x]) !== -1) {
+                                        t.ok(true)
+                                        messagesToFind.splice(x,1)
+                                    }
+                                }
+                            }
+                        })
+
 
                         f.return()
                     }
                 })
+
 
                 var FailUnit2 = require('./tests/deadunitCore.browserAjaxThrow')
 

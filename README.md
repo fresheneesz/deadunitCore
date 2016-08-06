@@ -309,6 +309,7 @@ How to Contribute!
 Changelog
 ========
 
+* 5.0.19 - changing timeouts to mean a time after the last assert
 * 5.0.18 - fixing bug in edge case for thrown exceptions
 * 5.0.17 - minor upgrade from stackinfo (fixing a bug parsing one type of exception)
 * 5.0.16

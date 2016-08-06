@@ -19,7 +19,7 @@ require('./generated/deadlinkSourcemapPath.umd.js')
 require('./generated/deadlinkSourceOriginal.umd.js')
 
 var mainTest = OldDeadunit.test(tests.name, function(t) {
-
+    this.timeout(5000)
 
 
 
@@ -28,7 +28,7 @@ var mainTest = OldDeadunit.test(tests.name, function(t) {
     //*
     this.test('node-specific tests', function() {
         this.count(3)
-        this.timeout(30 * 1000)
+        this.timeout(2000)
 
         this.ok(fs.existsSync(__dirname+'/../npm-shrinkwrap.json'))   // make sure people commit with a shrinkwrap file
 

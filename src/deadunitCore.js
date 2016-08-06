@@ -110,6 +110,7 @@ module.exports = function(options) {
 
             UnitTester.prototype.test.apply(fakeTest, args) // set so the error handler can access the real test
             this.mainTester = fakeTest
+            this.parentTester = fakeTest
 
             fakeTest.groupEnded = true
             checkGroupDone(fakeTest)
@@ -292,11 +293,12 @@ module.exports = function(options) {
 
 
     // the prototype of objects used to write tests and contain the results of tests
-    var UnitTester = function(name, mainTester) {
+    var UnitTester = function(name, mainTester, parentTester) {
         if(!mainTester) mainTester = this
 
         this.id = groupid()
         this.mainTester = mainTester // the mainTester is used to easily figure out if the test results have been accessed (so early accesses can be detected)
+        this.parentTester = parentTester // used to reset timeouts
         this.name = name
 
         this.doneTests = 0
@@ -322,7 +324,7 @@ module.exports = function(options) {
                 var that = this
                 this.runningTests++
 
-                var tester = new UnitTester(name, this.mainTester)
+                var tester = new UnitTester(name, this.mainTester, this)
                 tester.manager = this.manager
                 tester.doSourcemappery = this.doSourcemappery // inherit from parent test
                 tester.warningHandler = this.warningHandler
@@ -482,40 +484,58 @@ module.exports = function(options) {
             unitTester.mainTester.timeouts.forEach(function(to) {
                 clearTimeout(to)
             })
+            console.log("effed timeouts")
             unitTester.mainTester.timeouts = []
 
             endTest(unitTester, 'normal')
         }
     }
 
-    // if a timeout is the default, it can be overridden
     function timeout(unitTester, t, theDefault) {
         var timeouts = unitTester.mainTester.timeouts
 
-        var to = setTimeout(function() {
-            remove(timeouts, to)
+        unitTester.timeoutTime = t
+
+        if(theDefault) {
+            timeouts.defaultTimeout = true
+        } else if(unitTester === unitTester.mainTester && timeouts.defaultTimeout) { // if a timeout is the default, it can be overridden
+            clearTimeout(unitTester.timeoutHandle)
+            remove(timeouts, unitTester.timeoutHandle)
+            timeouts.defaultTimeout = undefined
+            delete unitTester.timeoutHandle
+        }
+
+        setTesterTimeout(unitTester)
+    }
+
+    // sets or resets a timeout for a unitTester
+    function setTesterTimeout(unitTester) {
+        var timeouts = unitTester.mainTester.timeouts
+        if(unitTester.timeoutHandle !== undefined) {
+            clearTimeout(unitTester.timeoutHandle)
+            remove(timeouts, unitTester.timeoutHandle)
+        }
+
+        unitTester.timeoutHandle = setTimeout(function() {
+            remove(timeouts, unitTester.timeoutHandle)
+            delete unitTester.timeoutHandle
 
             if(timeouts.length === 0 && !unitTester.mainTester.ended) {
                 endTest(unitTester.mainTester, 'timeout')
             }
-        }, t)
+        }, unitTester.timeoutTime)
 
-        timeouts.push(to)
+        console.log("created: "+unitTester.timeoutHandle)
+        timeouts.push(unitTester.timeoutHandle)
+    }
 
-        if(theDefault) {
-            timeouts.default = to
-        } else if(timeouts.default !== undefined) {
-            clearTimeout(timeouts.default)
-            remove(timeouts, timeouts.default)
-            timeouts.default = undefined
-        }
+    // removes an item from an array
+    function remove(array, item) {
+        console.log("attempting to remove "+item)
+        var index = array.indexOf(item)
+        if(index !== -1)
+            array.splice(index, 1) // no longer throwing Error("Item doesn't exist to remove") if there's nothing to remove - in the case that mainTester.timeouts gets set back to [] (when done), it won't be there
 
-        function remove(array, item) {
-            var index = array.indexOf(item)
-            if(index === -1)
-                throw Error("Item doesn't exist to remove")
-            array.splice(index, 1)
-        }
     }
 
     function endTest(that, type) {
@@ -543,6 +563,13 @@ module.exports = function(options) {
             var lineInfoFuture = getLineInformation(functionName, stackIncrease, that.doSourcemappery, that.warningHandler)
         else
             var lineInfoFuture = Future(lineInfo)
+
+        // reste timeouts up the chain
+        var cur = that
+        while(cur !== undefined) {
+            setTesterTimeout(cur)
+            cur = cur.parentTester
+        }
 
         var emitData = lineInfoFuture.then(function(lineInfo) {
             var result = lineInfo
