@@ -1,36 +1,45 @@
-{"name":"deadunit-core",
- "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript in node.js and the browser.",
- "keywords": ["unit", "test", "testing", "javascript", "node", "deadunit", "asynchronous"],
- "version":"5.0.20",
- "dependencies":{
-	 "async-future":"1.0.6",
-     "stack-trace":"0.0.7",
-     "stackinfo":"1.1.4",
-     "proto":"1.0.18",
-     "source-map-resolve":"0.1.3",
-     "source-map": "",
-     "ajax":"https://github.com/fresheneesz/ajax/archive/28d7ca2a922446ad9d2eae7d1bc615f3dbeb2f57.tar.gz",
-     "colors":"https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz"
- },
- "devDependencies": {
-    "deadunit":"5.1.9",
-    "fibers":"",
-    "requirejs":"",
+{
+  "name": "deadunit-core",
+  "description": "The core for deadunit - a dead-simple nestable unit testing library for javascript in node.js and the browser.",
+  "keywords": [
+    "unit",
+    "test",
+    "testing",
+    "javascript",
+    "node",
+    "deadunit",
+    "asynchronous"
+  ],
+  "version": "5.0.21",
+  "dependencies": {
+    "ajax": "https://github.com/fresheneesz/ajax/archive/28d7ca2a922446ad9d2eae7d1bc615f3dbeb2f57.tar.gz",
+    "async-future": "1.0.6",
+    "colors": "https://github.com/fresheneesz/colors.js/archive/e990804d7c301765409770582c6aa6d562a23198.tar.gz",
+    "mime": "^3.0.0",
+    "proto": "1.0.18",
+    "source-map": "0.1.33",
+    "source-map-resolve": "0.1.3",
+    "stack-trace": "0.0.7",
+    "stackinfo": "1.1.4"
+  },
+  "devDependencies": {
     "browserify": "3.46.0",
-    "webpack": "",
-    "coffee-script":""
- },
- "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
- "license": {
-   "name": "MIT",
-   "url": "http://www.opensource.org/licenses/mit-license.php"
- },
- "repository": {
-   "type": "git",
-   "url": "git://github.com/fresheneesz/deadunitCore"
- },
- "scripts": {
-   "test": "node test/testDeadunitCore",
-   "NOT postinstall": "node build.js"
- }
+    "coffee-script": "",
+    "deadunit": "5.1.9",
+    "requirejs": "2.2.0",
+    "webpack": "3"
+  },
+  "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
+  "license": {
+    "name": "MIT",
+    "url": "http://www.opensource.org/licenses/mit-license.php"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/fresheneesz/deadunitCore"
+  },
+  "scripts": {
+    "test": "node test/testDeadunitCore",
+    "NOT postinstall": "node build.js"
+  }
 }

@@ -57,10 +57,6 @@ function buildWebpackBundle(entrypoint) {
             pathinfo: true, // do not use this in production
             jsonpFunction: "JSON_PEEEE_BITCHEEEEEESSZZZ"
         },
-        plugins: [
-          new webpack.optimize.OccurenceOrderPlugin(/*preferEntry=*/true), // does .. something, and makes the entry chunk smaller (at the cost of making later chunks bigger)
-          new webpack.optimize.DedupePlugin()       // removes duplicate files
-        ],
         cache: true,
         devtool: "source-map"
 

@@ -7,7 +7,6 @@ var domain = require("domain")
 
 var OldDeadunit = require('deadunit')
 var Unit = require('../src/deadunitCore.node')
-var Future = require('async-future')
 
 var tests = require("./deadunitTests")
 
@@ -21,74 +20,12 @@ require('./generated/deadlinkSourceOriginal.umd.js')
 var mainTest = OldDeadunit.test(tests.name, function(t) {
     this.timeout(5000)
 
-
-
-
-
     //*
     this.test('node-specific tests', function() {
         this.count(3)
         this.timeout(2000)
 
         this.ok(fs.existsSync(__dirname+'/../npm-shrinkwrap.json'))   // make sure people commit with a shrinkwrap file
-
-        // when using fibers/futures, sometimes incorrect causes a future to never be resolved,
-        // which causes the program to exit in what should be the middle of a continuation
-        // this test is about making sure that you can at least see the results that were collected within that incomplete test
-        this.test('fibers/futures - never-resolved future problem', function(t) {
-            this.count(10)
-
-            var Fiber = require('fibers')
-            var FibersFuture = require('fibers/future')
-
-            var f = new Future, f2 = new Future
-            var ff = new FibersFuture
-
-            var test = Unit.test(function() {
-                this.count(2) // timeout
-                this.timeout(100) // timeout faster
-
-                setTimeout(function() {
-                    Fiber(function() {
-                        f.return()
-                        this.test("Dead fiber after results", function() {
-                            this.ok(true)
-                            ff.wait()
-                            this.ok(false) // not supposed to get here
-                        })
-                    }.bind(this)).run()
-                }.bind(this),0)
-
-                setTimeout(function() {
-                    Fiber(function() {
-                        f2.return()
-                        this.test("Dead fiber before any results", function() { // this previously caused the duration to show up as NaN
-                            ff.wait()
-                            this.ok(false) // not supposed to get here
-                        })
-                    }.bind(this)).run()
-                }.bind(this),0)
-            }).events({end: function() {
-                Future.all([f,f2]).then(function() {
-                    var results = test.results()
-
-                    t.ok(results.results.length === 3, results.results.length)
-
-                    var subtest1 = results.results[1]
-                    t.ok(subtest1.exceptions.length === 0, require('util').inspect(subtest1.exceptions))
-                    t.ok(subtest1.results.length === 1, subtest1.results.length)
-                    t.ok(subtest1.results[0].success === true)
-                    t.ok(subtest1.duration !== undefined, subtest1.duration)
-                    t.ok(subtest1.duration >= 0, results.results[0].duration)
-
-                    subtest1 = results.results[2]
-                    t.ok(subtest1.exceptions.length === 0, require('util').inspect(results.results[0].exceptions))
-                    t.ok(subtest1.results.length === 0)
-                    t.ok(subtest1.duration !== undefined, subtest1.duration)
-                    t.ok(subtest1.duration >= 0, subtest1.duration)
-                }).done()
-            }})
-        })
 
         // manifests because of a bug in node that hasn't been fixed in the latest release yet (tho is fixed for the next major version) https://github.com/joyent/node/issues/7550
         // note that this was also a bug in deadunit-core that meant the actual exception wasn't thrown, instead undefined was being thrown

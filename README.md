@@ -275,23 +275,18 @@ To Do
 * tests are timing out too easily - give each test a default timeout of 1 second (that can be overwritten by an explicit `this.timeout` call)
 * Look into using https://ci.testling.com/ for browser testing
 * when chrome bug https://code.google.com/p/chromium/issues/detail?id=368444 is fixed, set ajax back to asynchronous
-* There's already a way to work around dead fibers, but still need to make a way to work around dead futures
-  * put each subtest in its own timeout, and resolve a future either when the previous test completes or when it times out
-    * note that this method would effectively force sequential test running - not entirely a bad thing in my opinion (since if you really wanted to squeeze out speed of your test, you can organize it within the same test)
-  * This would have to require that no asserts happen after subtests start being created (because it would be confusing that those asserts happen before the subtests written before them, because the subtests happen asynchronously)
-    * throw an error for any this.ok or this.count run for any test that already contains subtests this.test
 * allow individual tests be cherry picked (for rerunning tests or testing specific things in development)
 
 How to Contribute!
 ============
 
-###Anything helps
+### Anything helps
 
 * Creating issues (aka tickets/bugs/etc). Please feel free to use issues to report bugs, request features, and discuss changes.
 * Updating the documentation: ie this readme file. Be bold! Help create amazing documentation!
 * Submitting pull requests.
 
-###How to submit pull requests
+### How to submit pull requests
 
 1. Please create an issue and get my input before spending too much time creating a feature. Work with me to ensure your feature or addition is optimal and fits with the purpose of the project.
 2. Fork the repository
@@ -301,7 +296,7 @@ How to Contribute!
 6. If it's a code change, please add to the unit tests (at test/testDeadunitCore.js) to verify that your change
 7. When you're done, run the unit tests and ensure they all pass
   * Make sure you run `node build.js` to build the browser packages (browserPackage/deadunitCore.browser.gen.umd.js and test/deadunitTests.browser.umd.js) before running the browser tests
-  * For a full test, run testServer.js and access the browser tests by going to http://localhost:8000/
+  * For a full test, run testServer.js and access the browser tests by going to http://localhost:8100/
     * Also run the tests from the filesystem to ensure that works as well (ie file:// instead of using the testServer)
 8. Commit and push your changes
 9. Submit a pull request: https://help.github.com/articles/creating-a-pull-request
